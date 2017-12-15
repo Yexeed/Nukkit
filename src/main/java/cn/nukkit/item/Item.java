@@ -948,6 +948,7 @@ public class Item implements Cloneable {
 
             return item;
         } catch (Exception e) {
+            MainLogger.getLogger().logException(e);
             return new Item(id, meta, count).setCompoundTag(tags);
         }
     }
@@ -1002,6 +1003,12 @@ public class Item implements Cloneable {
 
     public byte[] getCompoundTag() {
         return tags;
+    }
+
+    public void encodeCompoundTag() {
+        if (cachedNBT != null) {
+            this.tags = this.writeCompoundTag(this.cachedNBT);
+        }
     }
 
     public boolean hasCompoundTag() {

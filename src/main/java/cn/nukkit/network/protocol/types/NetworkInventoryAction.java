@@ -218,19 +218,28 @@ public class NetworkInventoryAction {
 
                     switch (this.windowId) {
                         case SOURCE_TYPE_ENCHANT_INPUT:
+                            //System.out.println("input: "+this.newItem);
                             this.inventorySlot = 0;
                             Item local = enchant.getItem(0);
                             if (local.equals(this.newItem, true, false)) {
+                                //System.out.println("equals");
                                 enchant.setItem(0, this.newItem);
                             }
                             break;
                         case SOURCE_TYPE_ENCHANT_MATERIAL:
+                            //System.out.println("material");
                             this.inventorySlot = 1;
                             break;
                         case SOURCE_TYPE_ENCHANT_OUTPUT:
+                            /*.out.println("output: "+this.newItem);
+                            local = enchant.getItem(0);
+                            if (local.equals(this.newItem, true, false)) {
+                                enchant.setItem(0, this.newItem);
+                            }*/
+                            enchant.sendSlot(1, player);
                             enchant.sendSlot(0, player);
                             //ignore?
-                            return null;
+                            break;
                     }
 
                     return new SlotChangeAction(enchant, this.inventorySlot, this.oldItem, this.newItem);

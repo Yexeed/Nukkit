@@ -50,7 +50,7 @@ public class BlockWood extends BlockSolid {
                 "Jungle Wood"
         };
 
-        return names[this.meta & 0x03];
+        return this.meta < 0 ? "Unknown" : names[this.meta % 4];
     }
 
     @Override

@@ -1498,6 +1498,10 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public Block getBlock(Vector3 pos, boolean cached) {
+        if (pos.y < 0 || pos.y > 255) {
+            return new BlockAir();
+        }
+
         long chunkIndex = Level.chunkHash((int) pos.x >> 4, (int) pos.z >> 4);
         BlockVector3 index = Level.blockHash((int) pos.x, (int) pos.y, (int) pos.z);
         int fullState;
@@ -2736,6 +2740,7 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         if (spawn != null) {
+            //System.out.println("spawn: "+spawn.y);
             Vector3 v = spawn.floor();
             FullChunk chunk = this.getChunk((int) v.x >> 4, (int) v.z >> 4, false);
             int x = (int) v.x & 0x0f;
@@ -2756,7 +2761,7 @@ public class Level implements ChunkManager, Metadatable {
                     }
                 }
 
-                for (; y >= 0 && y < 256; ++y) {
+                for (; y >= 0 && y < 255; ++y) {
                     int b = chunk.getFullBlock(x, y + 1, z);
                     Block block = Block.get(b >> 4, b & 0x0f);
                     if (!this.isFullBlock(block)) {

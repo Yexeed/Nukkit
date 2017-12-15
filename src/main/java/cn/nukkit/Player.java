@@ -47,7 +47,6 @@ import cn.nukkit.level.Position;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.level.format.generic.BaseFullChunk;
 import cn.nukkit.level.particle.CriticalParticle;
-import cn.nukkit.level.particle.EnchantmentTableParticle;
 import cn.nukkit.level.particle.PunchBlockParticle;
 import cn.nukkit.level.sound.ExperienceOrbSound;
 import cn.nukkit.level.sound.ItemFrameItemRemovedSound;
@@ -849,13 +848,16 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         setTimePacket.time = this.level.getTime();
         this.dataPacket(setTimePacket);
 
+        //System.out.println("spawn Y: "+this.y);
         Position pos = this.level.getSafeSpawn(this);
+        //System.out.println("spawn Y2: "+pos.y);
 
         PlayerRespawnEvent respawnEvent = new PlayerRespawnEvent(this, pos);
 
         this.server.getPluginManager().callEvent(respawnEvent);
 
         pos = respawnEvent.getRespawnPosition();
+        //System.out.println("spawn Y3: "+pos.y);
 
         RespawnPacket respawnPacket = new RespawnPacket();
         respawnPacket.x = (float) pos.x;
@@ -1000,6 +1002,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         if (!this.connected) {
             return -1;
         }
+
+        /*int pid = packet.pid();
+        if(pid != ProtocolInfo.FULL_CHUNK_DATA_PACKET && pid != ProtocolInfo.MOVE_PLAYER_PACKET && pid != ProtocolInfo.BATCH_PACKET && pid != ProtocolInfo.MOVE_ENTITY_PACKET) {
+            MainLogger.getLogger().info("SENDING: "+packet.getClass().getSimpleName());
+        }*/
 
         try (Timing timing = Timings.getSendDataPacketTiming(packet)) {
             DataPacketSendEvent ev = new DataPacketSendEvent(this, packet);
@@ -1477,9 +1484,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                     } else {
                         this.addMovement(this.x, this.y + this.getEyeHeight(), this.z, this.yaw, this.pitch, this.yaw);
                     }
-
-                    EnchantmentTableParticle particle = new EnchantmentTableParticle(this.add(0, 1));
-                    this.level.addParticle(particle);
                 } else {
                     this.blocksAround = blocksAround;
                     this.collisionBlocks = collidingBlocks;
@@ -1848,11 +1852,14 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         Level level;
         if ((level = this.server.getLevelByName(nbt.getString("Level"))) == null || !alive) {
             this.setLevel(this.server.getDefaultLevel());
+
             nbt.putString("Level", this.level.getName());
-            nbt.getList("Pos", DoubleTag.class)
+            ListTag<DoubleTag> posList = new ListTag<DoubleTag>("Pos")
                     .add(new DoubleTag("0", this.level.getSpawnLocation().x))
                     .add(new DoubleTag("1", this.level.getSpawnLocation().y))
                     .add(new DoubleTag("2", this.level.getSpawnLocation().z));
+
+            nbt.putList(posList);
         } else {
             this.setLevel(level);
         }
@@ -1879,6 +1886,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         ListTag<DoubleTag> posList = nbt.getList("Pos", DoubleTag.class);
 
         super.init(this.level.getChunk((int) posList.get(0).data >> 4, (int) posList.get(2).data >> 4, true), nbt);
+        //System.out.println("load Y: "+this.y);
 
         if (!this.namedTag.contains("foodLevel")) {
             this.namedTag.putInt("foodLevel", 20);
@@ -1913,7 +1921,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.spawnPosition = new Position(this.namedTag.getInt("SpawnX"), this.namedTag.getInt("SpawnY"), this.namedTag.getInt("SpawnZ"), level);
         }
 
+        //System.out.println("login Y: "+this.y);
         Position spawnPosition = this.getSpawn();
+        //System.out.println("login spawn Y: "+spawnPosition.y);
 
         StartGamePacket startGamePacket = new StartGamePacket();
         startGamePacket.entityUniqueId = this.id;

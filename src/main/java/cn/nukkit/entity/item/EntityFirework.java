@@ -1,13 +1,23 @@
 package cn.nukkit.entity.item;
 
 import cn.nukkit.Player;
+import cn.nukkit.Server;
 import cn.nukkit.entity.Entity;
+import cn.nukkit.entity.data.ByteEntityData;
+import cn.nukkit.entity.data.LongEntityData;
+import cn.nukkit.entity.data.SlotEntityData;
+import cn.nukkit.entity.data.Vector3fEntityData;
 import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.EntityDamageEvent.DamageCause;
+import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemFireworks;
 import cn.nukkit.level.format.FullChunk;
+import cn.nukkit.math.Vector3f;
+import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
 import cn.nukkit.network.protocol.EntityEventPacket;
+import cn.nukkit.network.protocol.LevelSoundEventPacket;
 import cn.nukkit.network.protocol.PlaySoundPacket;
 
 /**
@@ -19,6 +29,7 @@ public class EntityFirework extends Entity {
 
     private int fireworkAge;
     private int lifetime;
+    private Item firework;
 
     public EntityFirework(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -29,6 +40,17 @@ public class EntityFirework extends Entity {
         this.motionX = this.level.rand.nextGaussian() * 0.001D;
         this.motionZ = this.level.rand.nextGaussian() * 0.001D;
         this.motionY = 0.05D;
+
+        if (nbt.contains("FireworkItem")) {
+            firework = NBTIO.getItemHelper(nbt.getCompound("FireworkItem"));
+        } else {
+            firework = new ItemFireworks();
+        }
+
+        this.setDataProperty(new SlotEntityData(16, firework));
+        this.setDataProperty(new Vector3fEntityData(17, new Vector3f(0, 1, 0)));
+        this.setDataProperty(new LongEntityData(18, -1));
+        this.setDataProperty(new ByteEntityData(22, 0));
     }
 
     @Override
@@ -88,13 +110,24 @@ public class EntityFirework extends Entity {
 
             this.fireworkAge++;
 
+            hasUpdate = true;
             if (this.fireworkAge >= this.lifetime) {
                 EntityEventPacket pk = new EntityEventPacket();
-                pk.data = 1;
+                pk.data = 0;
                 pk.event = EntityEventPacket.FIREWORK_EXPLOSION;
                 pk.eid = this.getId();
 
-                this.level.addChunkPacket(this.getFloorX() >> 4, this.getFloorZ() >> 4, pk);
+                LevelSoundEventPacket pk2 = new LevelSoundEventPacket();
+                pk2.sound = LevelSoundEventPacket.SOUND_LARGE_BLAST;
+                pk2.extraData = -1;
+                pk2.pitch = -1;
+                pk2.x = (float) getX();
+                pk2.y = (float) getY();
+                pk2.z = (float) getZ();
+
+                Server.broadcastPacket(getViewers().values(), pk);
+                //this.level.addChunkPacket(this.getFloorX() >> 4, this.getFloorZ() >> 4, pk);
+                this.level.addChunkPacket(this.getFloorX() >> 4, this.getFloorZ() >> 4, pk2);
 
                 this.kill();
                 hasUpdate = true;
@@ -115,6 +148,11 @@ public class EntityFirework extends Entity {
                 && super.attack(source);
     }
 
+    public void setFirework(Item item) {
+        this.firework = item;
+        this.setDataProperty(new SlotEntityData(16, item));
+    }
+
     @Override
     public void spawnTo(Player player) {
         super.spawnTo(player);
@@ -131,5 +169,15 @@ public class EntityFirework extends Entity {
         pk.speedZ = (float) this.motionZ;
         pk.metadata = this.dataProperties;
         player.dataPacket(pk);
+    }
+
+    @Override
+    public float getWidth() {
+        return 0.25f;
+    }
+
+    @Override
+    public float getHeight() {
+        return 0.25f;
     }
 }
