@@ -1661,6 +1661,10 @@ public class Level implements ChunkManager, Metadatable {
                 position = (Position) pos;
             }
 
+            if(position.level == null) {
+                position.level = this;
+            }
+
             block.position(position);
             this.blockCache.remove(Level.blockHash((int) position.x, (int) position.y, (int) position.z));
 
@@ -1687,7 +1691,7 @@ public class Level implements ChunkManager, Metadatable {
                             block.x + 1, block.y + 1, block.z + 1))) {
                         entity.scheduleUpdate();
                     }
-                    ev.getBlock().onUpdate(BLOCK_UPDATE_NORMAL);
+                    block.onUpdate(BLOCK_UPDATE_NORMAL);
                 }
 
                 this.updateAround(position);

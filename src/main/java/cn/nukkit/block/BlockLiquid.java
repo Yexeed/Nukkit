@@ -9,6 +9,7 @@ import cn.nukkit.level.sound.FizzSound;
 import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.utils.MainLogger;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -343,6 +344,10 @@ public abstract class BlockLiquid extends BlockTransparent {
                 this.getLevel().useBreakOn(block);
             }
 
+            if(block.getLevel() == null) {
+                MainLogger.getLogger().logException(new NullPointerException("Null level block"));
+                return;
+            }
             this.getLevel().setBlock(block, this.getBlock(newFlowDecay), true);
         }
     }

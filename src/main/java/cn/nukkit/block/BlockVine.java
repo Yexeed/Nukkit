@@ -163,18 +163,11 @@ public class BlockVine extends BlockTransparent {
 
     @Override
     public int onUpdate(int type) {
-        if (type == Level.BLOCK_UPDATE_NORMAL) {
-            BlockFace[] faces = {
-                    BlockFace.DOWN,
-                    BlockFace.SOUTH,
-                    BlockFace.WEST,
-                    BlockFace.DOWN,
-                    BlockFace.NORTH,
-                    BlockFace.DOWN,
-                    BlockFace.DOWN,
-                    BlockFace.DOWN,
-                    BlockFace.EAST
-            };
+        /*if (type == Level.BLOCK_UPDATE_NORMAL) {
+            boolean south
+            boolean west
+            boolean north
+            boolean east
             if (!this.getSide(faces[this.meta]).isSolid()) {
                 Block up = this.up();
                 if (up.getId() != this.getId() || up.meta != this.meta) {
@@ -182,7 +175,7 @@ public class BlockVine extends BlockTransparent {
                     return Level.BLOCK_UPDATE_NORMAL;
                 }
             }
-        }
+        }*/
         return 0;
     }
 
