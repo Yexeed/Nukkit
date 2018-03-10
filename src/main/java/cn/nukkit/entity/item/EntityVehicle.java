@@ -102,6 +102,8 @@ public abstract class EntityVehicle extends Entity implements EntityRideable, En
             return false;
         }
 
+        updateRiderPosition(getMountedOffset());
+
         SetEntityLinkPacket pk;
 
         pk = new SetEntityLinkPacket();
@@ -122,7 +124,6 @@ public abstract class EntityVehicle extends Entity implements EntityRideable, En
         linkedEntity = entity;
 
         entity.setDataFlag(DATA_FLAGS, DATA_FLAG_RIDING, true);
-        updateRiderPosition(getMountedYOffset());
         return true;
     }
 

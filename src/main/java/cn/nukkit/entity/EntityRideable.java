@@ -1,5 +1,7 @@
 package cn.nukkit.entity;
 
+import cn.nukkit.Player;
+
 /**
  * author: MagicDroidX
  * Nukkit Project
@@ -14,4 +16,7 @@ public interface EntityRideable {
      */
     boolean mountEntity(Entity entity);
 
+    default void onPlayerInput(Player player, double x, double y) {
+
+    }
 }

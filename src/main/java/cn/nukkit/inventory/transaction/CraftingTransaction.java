@@ -4,6 +4,7 @@ import cn.nukkit.Player;
 import cn.nukkit.event.inventory.CraftItemEvent;
 import cn.nukkit.inventory.BigCraftingGrid;
 import cn.nukkit.inventory.CraftingRecipe;
+import cn.nukkit.inventory.transaction.action.CraftingTakeResultAction;
 import cn.nukkit.inventory.transaction.action.InventoryAction;
 import cn.nukkit.item.Item;
 import cn.nukkit.math.NukkitMath;
@@ -27,6 +28,8 @@ public class CraftingTransaction extends InventoryTransaction {
     protected Item primaryOutput;
 
     protected CraftingRecipe recipe;
+
+    public CraftingTakeResultAction craftAction;
 
     public CraftingTransaction(Player source, List<InventoryAction> actions) {
         super(source, actions, false);
@@ -150,7 +153,16 @@ public class CraftingTransaction extends InventoryTransaction {
         CraftItemEvent ev;
 
         this.source.getServer().getPluginManager().callEvent(ev = new CraftItemEvent(this));
-        return !ev.isCancelled();
+
+        if (!ev.isCancelled()) {
+            if (this.craftAction != null && ev.getOutput() != null) {
+                this.craftAction.onResultChange(ev.getOutput());
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     protected void sendInventories() {

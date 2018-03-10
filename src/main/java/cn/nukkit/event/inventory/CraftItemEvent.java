@@ -32,6 +32,8 @@ public class CraftItemEvent extends Event implements Cancellable {
 
     private CraftingTransaction transaction;
 
+    private Item output;
+
     public CraftItemEvent(CraftingTransaction transaction) {
         this.transaction = transaction;
 
@@ -66,5 +68,13 @@ public class CraftItemEvent extends Event implements Cancellable {
 
     public Player getPlayer() {
         return this.player;
+    }
+
+    public void setOutput(Item output) {
+        this.output = output;
+    }
+
+    public Item getOutput() {
+        return output;
     }
 }

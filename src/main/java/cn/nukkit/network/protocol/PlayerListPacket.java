@@ -74,6 +74,8 @@ public class PlayerListPacket extends DataPacket {
             this.name = name;
             this.skin = skin;
             this.capeData = skin.getCape().getData();
+            this.geometryData = skin.geometry;
+            this.geometryModel = skin.geometryName;
             this.xboxUserId = xboxUserId == null ? "" : xboxUserId;
         }
     }

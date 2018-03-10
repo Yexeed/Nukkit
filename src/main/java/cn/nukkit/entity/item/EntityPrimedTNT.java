@@ -82,6 +82,7 @@ public class EntityPrimedTNT extends Entity implements EntityExplosive {
 
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_IGNITED, true);
         this.setDataProperty(new IntEntityData(DATA_FUSE_LENGTH, fuse));
+        this.setDataFlag(DATA_FLAGS, DATA_FLAG_IMMOBILE);
 
         this.level.addSound(new TNTPrimeSound(this));
     }

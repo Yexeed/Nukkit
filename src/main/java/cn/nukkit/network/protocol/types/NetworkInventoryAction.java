@@ -202,6 +202,9 @@ public class NetworkInventoryAction {
                             anvil.clear(0);
                             anvil.clear(1);
                             anvil.setItem(2, this.oldItem);
+
+                            player.changeExperience();
+
                             //System.out.println("action result");
                             return new SlotChangeAction(anvil, this.inventorySlot, this.oldItem, this.newItem);
                     }
@@ -224,6 +227,7 @@ public class NetworkInventoryAction {
                             if (local.equals(this.newItem, true, false)) {
                                 //System.out.println("equals");
                                 enchant.setItem(0, this.newItem);
+                                player.changeExperience();
                             }
                             break;
                         case SOURCE_TYPE_ENCHANT_MATERIAL:

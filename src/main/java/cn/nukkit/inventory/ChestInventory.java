@@ -12,6 +12,13 @@ import cn.nukkit.network.protocol.LevelSoundEventPacket;
  */
 public class ChestInventory extends ContainerInventory {
 
+    protected DoubleChestInventory doubleInventory;
+
+    public ChestInventory(BlockEntityChest chest, DoubleChestInventory inventory) {
+        super(chest, InventoryType.CHEST);
+        this.doubleInventory = inventory;
+    }
+
     public ChestInventory(BlockEntityChest chest) {
         super(chest, InventoryType.CHEST);
     }
@@ -59,5 +66,22 @@ public class ChestInventory extends ContainerInventory {
         }
 
         super.onClose(who);
+    }
+
+    public void setDoubleInventory(DoubleChestInventory doubleInventory) {
+        this.doubleInventory = doubleInventory;
+    }
+
+    public DoubleChestInventory getDoubleInventory() {
+        return doubleInventory;
+    }
+
+    @Override
+    public void sendSlot(int index, Player... players) {
+        if (this.doubleInventory != null) {
+            this.doubleInventory.sendSlot(this, index, players);
+        } else {
+            super.sendSlot(index, players);
+        }
     }
 }

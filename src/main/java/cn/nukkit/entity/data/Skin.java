@@ -25,6 +25,8 @@ public class Skin {
 
     private byte[] data = new byte[SINGLE_SKIN_SIZE];
     private String model;
+    public String geometryName = "";
+    public byte[] geometry = new byte[0];
     private Cape cape = new Cape(new byte[0]);  //default no cape
 
     public Skin(byte[] data) {
@@ -160,7 +162,7 @@ public class Skin {
     }
 
     public boolean isValid() {
-        return this.data.length == SINGLE_SKIN_SIZE || this.data.length == DOUBLE_SKIN_SIZE;
+        return (this.data.length == SINGLE_SKIN_SIZE || this.data.length == DOUBLE_SKIN_SIZE) && (this.cape == null || this.cape.getData().length == 0 || this.cape.getData().length == 8192);
     }
 
     public class Cape {

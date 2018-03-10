@@ -197,6 +197,8 @@ public class Server {
 
     private Thread currentThread;
 
+    private Watchdog watchdog;
+
     Server(MainLogger logger, final String filePath, String dataPath, String pluginPath) {
         Preconditions.checkState(instance == null, "Already initialized!");
         currentThread = Thread.currentThread(); // Saves the current thread instance as a reference, used in Server#isPrimaryThread()
@@ -469,6 +471,9 @@ public class Server {
 
         this.enablePlugins(PluginLoadOrder.POSTWORLD);
 
+        this.watchdog = new Watchdog(this, 10000);
+        this.watchdog.start();
+
         this.start();
     }
 
@@ -702,6 +707,10 @@ public class Server {
     }
 
     public void shutdown() {
+        if (this.watchdog != null) {
+            this.watchdog.kill();
+        }
+
         if (this.isRunning) {
             ServerKiller killer = new ServerKiller(90);
             killer.start();
@@ -1926,6 +1935,14 @@ public class Server {
      */
     public boolean isPrimaryThread() {
         return (Thread.currentThread() == currentThread);
+    }
+
+    public Thread getPrimaryThread() {
+        return currentThread;
+    }
+
+    public long getNextTick() {
+        return nextTick;
     }
 
     private void registerEntities() {

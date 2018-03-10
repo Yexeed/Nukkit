@@ -106,12 +106,6 @@ public class Level implements ChunkManager, Metadatable {
     public final Map<Long, BlockEntity> updateBlockEntities = new HashMap<>();
 
     // Use a weak map to avoid OOM
-    private final ConcurrentMap<Object, Object> blockCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build().asMap();
-
-    // Use a weak map to avoid OOM
     private final ConcurrentMap<Object, Object> chunkCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(10, TimeUnit.MINUTES)
@@ -455,7 +449,6 @@ public class Level implements ChunkManager, Metadatable {
         this.provider.close();
         this.provider = null;
         this.blockMetadata = null;
-        this.blockCache.clear();
         this.temporalPosition = null;
         this.server.getLevels().remove(this.levelId);
     }
@@ -1036,14 +1029,9 @@ public class Level implements ChunkManager, Metadatable {
     public void clearCache(boolean full) {
         if (full) {
             this.chunkCache.clear();
-            this.blockCache.clear();
         } else {
             if (this.chunkCache.size() > 2048) {
                 this.chunkCache.clear();
-            }
-
-            if (this.blockCache.size() > 2048) {
-                this.blockCache.clear();
             }
         }
     }
@@ -1503,15 +1491,12 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         long chunkIndex = Level.chunkHash((int) pos.x >> 4, (int) pos.z >> 4);
-        BlockVector3 index = Level.blockHash((int) pos.x, (int) pos.y, (int) pos.z);
         int fullState;
 
         Block block;
         BaseFullChunk chunk;
 
-        if (cached && (block = (Block) this.blockCache.get(index)) != null) {
-            return block;
-        } else if (pos.y >= 0 && pos.y < 256 && (chunk = this.chunks.get(chunkIndex)) != null) {
+        if (pos.y >= 0 && pos.y < 256 && (chunk = this.chunks.get(chunkIndex)) != null) {
             fullState = chunk.getFullBlock((int) pos.x & 0x0f, (int) pos.y & 0xff,
                     (int) pos.z & 0x0f);
         } else {
@@ -1524,8 +1509,6 @@ public class Level implements ChunkManager, Metadatable {
         block.y = pos.y;
         block.z = pos.z;
         block.level = this;
-
-        this.blockCache.put(index, block);
 
         return block;
     }
@@ -1666,7 +1649,6 @@ public class Level implements ChunkManager, Metadatable {
             }
 
             block.position(position);
-            this.blockCache.remove(Level.blockHash((int) position.x, (int) position.y, (int) position.z));
 
             Long index = Level.chunkHash((int) position.x >> 4, (int) position.z >> 4);
 
@@ -1964,7 +1946,6 @@ public class Level implements ChunkManager, Metadatable {
         return this.useItemOn(vector, item, face, fx, fy, fz, player, false);
     }
 
-
     public Item useItemOn(Vector3 vector, Item item, BlockFace face, float fx, float fy, float fz, Player player, boolean playSound) {
         Block target = this.getBlock(vector);
         Block block = target.getSide(face);
@@ -2220,7 +2201,6 @@ public class Level implements ChunkManager, Metadatable {
 
     @Override
     public void setBlockIdAt(int x, int y, int z, int id) {
-        this.blockCache.remove(Level.blockHash(x, y, z));
         this.getChunk(x >> 4, z >> 4, true).setBlockId(x & 0x0f, y & 0xff, z & 0x0f, id & 0xff);
         addBlockChange(x, y, z);
         temporalVector.setComponents(x, y, z);
@@ -2246,7 +2226,6 @@ public class Level implements ChunkManager, Metadatable {
 
     @Override
     public void setBlockDataAt(int x, int y, int z, int data) {
-        this.blockCache.remove(Level.blockHash(x, y, z));
         this.getChunk(x >> 4, z >> 4, true).setBlockData(x & 0x0f, y & 0xff, z & 0x0f, data & 0x0f);
         addBlockChange(x, y, z);
         temporalVector.setComponents(x, y, z);

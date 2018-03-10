@@ -25,6 +25,7 @@ import cn.nukkit.level.particle.SmokeParticle;
 import cn.nukkit.math.MathHelper;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.math.Vector3f;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.network.protocol.AddEntityPacket;
 import cn.nukkit.utils.MinecartType;
@@ -114,8 +115,8 @@ public abstract class EntityMinecartAbstract extends EntityVehicle {
     }
 
     @Override
-    public float getMountedYOffset() {
-        return 0.45F; // Real minecart offset
+    public Vector3f getMountedOffset() {
+        return new Vector3f(0, 0.45F); // Real minecart offset
     }
 
     @Override
@@ -408,7 +409,7 @@ public abstract class EntityMinecartAbstract extends EntityVehicle {
         motionZ = NukkitMath.clamp(motionZ, -getMaxSpeed(), getMaxSpeed());
 
         if (linkedEntity != null && !hasUpdated) {
-            updateRiderPosition(getMountedYOffset() + 0.35F);
+            updateRiderPosition(getMountedOffset().add(0, 0.35F));
             hasUpdated = true;
         } else {
             hasUpdated = false;

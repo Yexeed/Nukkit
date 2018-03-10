@@ -320,6 +320,11 @@ public class PlayerInventory extends BaseInventory {
         for (int index = 0; index < limit; ++index) {
             this.clear(index);
         }
+
+        if (getHolder() instanceof Player) {
+            Player p = (Player) getHolder();
+            p.getCursorInventory().clearAll();
+        }
     }
 
     public void sendArmorContents(Player player) {

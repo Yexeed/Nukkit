@@ -81,15 +81,17 @@ public class LoginPacket extends DataPacket {
                 this.skin.setCape(this.skin.new Cape(Base64.getDecoder().decode(skinToken.get("CapeData").getAsString())));
         }
 
-        if (skinToken.has("SkinGeometryName")) this.skinGeometryName = skinToken.get("SkinGeometryName").getAsString();
+        if (skinToken.has("SkinGeometryName")) skin.geometryName = skinToken.get("SkinGeometryName").getAsString();
         if (skinToken.has("SkinGeometry"))
-            this.skinGeometry = Base64.getDecoder().decode(skinToken.get("SkinGeometry").getAsString());
+            skin.geometry = Base64.getDecoder().decode(skinToken.get("SkinGeometry").getAsString());
     }
 
     private JsonObject decodeToken(String token) {
         String[] base = token.split("\\.");
         if (base.length < 2) return null;
-        return new Gson().fromJson(new String(Base64.getDecoder().decode(base[1]), StandardCharsets.UTF_8), JsonObject.class);
+
+
+        return new Gson().fromJson(new String(Base64.getDecoder().decode(base[1].replaceAll("-", "+").replaceAll("_", "/")), StandardCharsets.UTF_8), JsonObject.class);
     }
 
     @Override

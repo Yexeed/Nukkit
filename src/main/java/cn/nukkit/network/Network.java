@@ -151,7 +151,7 @@ public class Network {
                 if ((pk = this.getPacket(buf[0])) != null) {
                     pk.setBuffer(buf, 3); //skip 2 more bytes
 
-                    pk.decode();
+                    pk.decode(player.getProtocol());
 
                     packets.add(pk);
                 }

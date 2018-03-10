@@ -17,6 +17,7 @@ public class CraftingTakeResultAction extends InventoryAction {
     public void onAddToTransaction(InventoryTransaction transaction) {
         if (transaction instanceof CraftingTransaction) {
             ((CraftingTransaction) transaction).setPrimaryOutput(this.getSourceItem());
+            ((CraftingTransaction) transaction).craftAction = this;
         } else {
             throw new RuntimeException(getClass().getName() + " can only be added to CraftingTransactions");
         }
@@ -33,12 +34,16 @@ public class CraftingTakeResultAction extends InventoryAction {
     }
 
     @Override
-    public void onExecuteSuccess(Player $source) {
+    public void onExecuteSuccess(Player source) {
 
     }
 
     @Override
     public void onExecuteFail(Player source) {
 
+    }
+
+    public void onResultChange(Item result) {
+        this.targetItem = result.clone();
     }
 }
