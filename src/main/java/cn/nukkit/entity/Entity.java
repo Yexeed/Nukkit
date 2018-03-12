@@ -2,10 +2,7 @@ package cn.nukkit.entity;
 
 import cn.nukkit.Player;
 import cn.nukkit.Server;
-import cn.nukkit.block.Block;
-import cn.nukkit.block.BlockDirt;
-import cn.nukkit.block.BlockFire;
-import cn.nukkit.block.BlockWater;
+import cn.nukkit.block.*;
 import cn.nukkit.entity.data.*;
 import cn.nukkit.event.Event;
 import cn.nukkit.event.entity.*;
@@ -15,6 +12,7 @@ import cn.nukkit.event.player.PlayerInteractEvent;
 import cn.nukkit.event.player.PlayerInteractEvent.Action;
 import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.item.Item;
+import cn.nukkit.level.EnumLevel;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Location;
 import cn.nukkit.level.Position;
@@ -29,6 +27,7 @@ import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.plugin.Plugin;
 import cn.nukkit.potion.Effect;
+import cn.nukkit.scheduler.Task;
 import cn.nukkit.utils.ChunkException;
 import cn.nukkit.utils.MainLogger;
 import co.aikar.timings.Timing;
@@ -1123,7 +1122,28 @@ public abstract class Entity extends Location implements Metadatable {
             EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, PortalType.NETHER);
             getServer().getPluginManager().callEvent(ev);
 
-            //TODO: teleport
+            Position newPos = EnumLevel.moveToNether(this);
+            if (newPos != null) {
+                for (int x = -1; x < 2; x++) {
+                    for (int z = -1; z < 2; z++) {
+                        int chunkX = (newPos.getFloorX() >> 4) + x,
+                                chunkZ = (newPos.getFloorZ() >> 4) + z;
+                        FullChunk chunk = newPos.level.getChunk(chunkX, chunkZ, false);
+                        if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
+                            newPos.level.generateChunk(chunkX, chunkZ, true);
+                        }
+                    }
+                }
+                this.teleport(newPos.add(1.5, 1, 0.5));
+                server.getScheduler().scheduleDelayedTask(new Task() {
+                    @Override
+                    public void onRun(int currentTick) {
+                        //dirty hack to make sure chunks are loaded and generated before spawning player
+                        teleport(newPos.add(1.5, 1, 0.5));
+                        BlockNetherPortal.spawnPortal(newPos);
+                    }
+                }, 20);
+            }
         }
 
         this.age += tickDiff;
