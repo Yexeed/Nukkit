@@ -70,6 +70,7 @@ public abstract class EntityProjectile extends Entity {
         if (this.fireTicks > 0) {
             EntityCombustByEntityEvent event = new EntityCombustByEntityEvent(this, entity, 5);
             this.server.getPluginManager().callEvent(ev);
+
             if (!event.isCancelled()) {
                 entity.setOnFire(event.getDuration());
             }

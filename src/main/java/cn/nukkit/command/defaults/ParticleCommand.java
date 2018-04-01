@@ -3,6 +3,7 @@ package cn.nukkit.command.defaults;
 import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.item.Item;
 import cn.nukkit.lang.TranslationContainer;
@@ -24,14 +25,14 @@ public class ParticleCommand extends VanillaCommand {
         //<name> <x> <y> <z> <xd> <yd> <zd> [count] [data]
         this.commandParameters.clear();
         this.commandParameters.put("default", new CommandParameter[]{
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false),
-                new CommandParameter("x", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("y", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("z", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("zd", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("yd", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("zd", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("count", CommandParameter.ARG_TYPE_INT, true),
+                new CommandParameter("player", CommandParamType.TARGET, false),
+                new CommandParameter("x", CommandParamType.STRING, false),
+                new CommandParameter("y", CommandParamType.STRING, false),
+                new CommandParameter("z", CommandParamType.STRING, false),
+                new CommandParameter("zd", CommandParamType.STRING, false),
+                new CommandParameter("yd", CommandParamType.STRING, false),
+                new CommandParameter("zd", CommandParamType.STRING, false),
+                new CommandParameter("count", CommandParamType.INT, true),
                 new CommandParameter("data", true)
         });
     }

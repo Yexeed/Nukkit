@@ -472,7 +472,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.recalculatePermissions();
         this.getAdventureSettings().update();
-        this.sendCommandData();
+        //this.sendCommandData();
     }
 
     @Override
@@ -564,6 +564,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         if (count > 0) {
             //TODO: structure checking
             pk.commands = data;
+
             int identifier = this.dataPacket(pk, true); // We *need* ACK so we can be sure that the client received the packet or not
             Thread t = new Thread() {
                 public void run() {
@@ -2152,7 +2153,16 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             ResourcePackStackPacket stackPacket = new ResourcePackStackPacket();
                             stackPacket.mustAccept = this.server.getForceResources();
                             stackPacket.resourcePackStack = this.server.getResourcePackManager().getResourceStack();
+
+                            /*if(stackPacket.resourcePackStack.length == 0) {
+                                if (this.preLoginEventTask.isFinished()) {
+                                    this.completeLoginSequence();
+                                } else {
+                                    this.shouldLogin = true;
+                                }
+                            } else {*/
                             this.dataPacket(stackPacket);
+                            //}
                             break;
                         case ResourcePackClientResponsePacket.STATUS_COMPLETED:
                             if (this.preLoginEventTask.isFinished()) {

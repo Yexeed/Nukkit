@@ -2,6 +2,7 @@ package cn.nukkit.command.defaults;
 
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.lang.TranslationContainer;
 import cn.nukkit.utils.TextFormat;
@@ -24,11 +25,11 @@ public class WhitelistCommand extends VanillaCommand {
         );
         this.commandParameters.clear();
         this.commandParameters.put("1arg", new CommandParameter[]{
-                new CommandParameter("on|off|list|reload", CommandParameter.ARG_TYPE_STRING, false)
+                new CommandParameter("on|off|list|reload", CommandParamType.STRING, false)
         });
         this.commandParameters.put("2args", new CommandParameter[]{
-                new CommandParameter("add|remove", CommandParameter.ARG_TYPE_STRING, false),
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false)
+                new CommandParameter("add|remove", CommandParamType.STRING, false),
+                new CommandParameter("player", CommandParamType.TARGET, false)
         });
     }
 

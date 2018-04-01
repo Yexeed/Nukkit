@@ -3,6 +3,7 @@ package cn.nukkit.command.defaults;
 import cn.nukkit.Player;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.event.player.PlayerTeleportEvent;
 import cn.nukkit.lang.TranslationContainer;
@@ -20,18 +21,18 @@ public class TeleportCommand extends VanillaCommand {
         this.setPermission("nukkit.command.teleport");
         this.commandParameters.clear();
         this.commandParameters.put("->Player", new CommandParameter[]{
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false),
+                new CommandParameter("player", CommandParamType.TARGET, false),
         });
         this.commandParameters.put("Player->Player", new CommandParameter[]{
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false),
-                new CommandParameter("target", CommandParameter.ARG_TYPE_TARGET, false),
+                new CommandParameter("player", CommandParamType.TARGET, false),
+                new CommandParameter("target", CommandParamType.TARGET, false),
         });
         this.commandParameters.put("Player->Pos", new CommandParameter[]{
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false),
-                new CommandParameter("blockPos", CommandParameter.ARG_TYPE_BLOCK_POS, false),
+                new CommandParameter("player", CommandParamType.TARGET, false),
+                new CommandParameter("blockPos", CommandParamType.POSITION, false),
         });
         this.commandParameters.put("->Pos", new CommandParameter[]{
-                new CommandParameter("blockPos", CommandParameter.ARG_TYPE_BLOCK_POS, false),
+                new CommandParameter("blockPos", CommandParamType.POSITION, false),
         });
     }
 

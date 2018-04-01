@@ -20,7 +20,6 @@ import cn.nukkit.event.weather.LightningStrikeEvent;
 import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBlock;
-import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.level.format.Chunk;
 import cn.nukkit.level.format.ChunkSection;
 import cn.nukkit.level.format.FullChunk;
@@ -46,7 +45,6 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.*;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.plugin.Plugin;
-import cn.nukkit.potion.Effect;
 import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.timings.LevelTimings;
 import cn.nukkit.utils.*;
@@ -1487,7 +1485,9 @@ public class Level implements ChunkManager, Metadatable {
 
     public Block getBlock(Vector3 pos, boolean cached) {
         if (pos.y < 0 || pos.y > 255) {
-            return new BlockAir();
+            Block air = new BlockAir();
+            air.position(Position.fromObject(pos, this));
+            return air;
         }
 
         long chunkIndex = Level.chunkHash((int) pos.x >> 4, (int) pos.z >> 4);
@@ -1777,7 +1777,7 @@ public class Level implements ChunkManager, Metadatable {
             // block
             // class
 
-            if (player.isCreative() && breakTime > 0.15) {
+            /*if (player.isCreative() && breakTime > 0.15) {
                 breakTime = 0.15;
             }
 
@@ -1793,7 +1793,7 @@ public class Level implements ChunkManager, Metadatable {
 
             if (eff != null && eff.getLevel() > 0) {
                 breakTime *= 1 - (0.3 * eff.getLevel());
-            }
+            }*/
 
             breakTime -= 0.15;
 
@@ -2355,7 +2355,7 @@ public class Level implements ChunkManager, Metadatable {
 
             Map<Long, BlockEntity> oldBlockEntities = oldChunk != null ? oldChunk.getBlockEntities() : new HashMap<>();
 
-            for (Entity entity : oldEntities.values()) {
+            for (Entity entity : new ArrayList<>(oldEntities.values())) {
                 chunk.addEntity(entity);
                 if (oldChunk != null) {
                     oldChunk.removeEntity(entity);
@@ -2363,7 +2363,7 @@ public class Level implements ChunkManager, Metadatable {
                 }
             }
 
-            for (BlockEntity blockEntity : oldBlockEntities.values()) {
+            for (BlockEntity blockEntity : new ArrayList<>(oldBlockEntities.values())) {
                 chunk.addBlockEntity(blockEntity);
                 if (oldChunk != null) {
                     oldChunk.removeBlockEntity(blockEntity);

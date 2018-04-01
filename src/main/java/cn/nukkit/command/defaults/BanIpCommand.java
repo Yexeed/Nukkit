@@ -3,6 +3,7 @@ package cn.nukkit.command.defaults;
 import cn.nukkit.Player;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.command.data.CommandParamType;
 import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.event.player.PlayerKickEvent;
 import cn.nukkit.lang.TranslationContainer;
@@ -27,7 +28,7 @@ public class BanIpCommand extends VanillaCommand {
         this.setAliases(new String[]{"banip"});
         this.commandParameters.clear();
         this.commandParameters.put("default", new CommandParameter[]{
-                new CommandParameter("player", CommandParameter.ARG_TYPE_TARGET, false),
+                new CommandParameter("player", CommandParamType.TARGET, false),
                 new CommandParameter("reason", true)
         });
     }
