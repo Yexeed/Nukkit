@@ -115,7 +115,6 @@ public class AvailableCommandsPacket extends DataPacket {
 
                     CommandParameter parameter = new CommandParameter(paramName, optional);
 
-
                     if ((type & ARG_FLAG_ENUM) != 0) {
                         int index = type & 0xffff;
                         parameter.enumData = enums.get(index);

@@ -6,7 +6,7 @@ package cn.nukkit.utils.bugreport;
 public class ExceptionHandler implements Thread.UncaughtExceptionHandler {
 
     public static void registerExceptionHandler() {
-        Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
+        //Thread.setDefaultUncaughtExceptionHandler(new ExceptionHandler());
     }
 
     @Override

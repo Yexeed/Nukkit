@@ -123,59 +123,63 @@ public abstract class EntityHumanType extends EntityCreature implements Inventor
             return false;
         }
 
-        if (source.getCause() != DamageCause.VOID && source.getCause() != DamageCause.CUSTOM && source.getCause() != DamageCause.MAGIC) {
-            int points = 0;
-            int epf = 0;
-            int toughness = 0;
+        if (inventory != null) {
+            if (source.getCause() != DamageCause.VOID && source.getCause() != DamageCause.CUSTOM && source.getCause() != DamageCause.MAGIC) {
+                int points = 0;
+                int epf = 0;
+                int toughness = 0;
 
-            for (Item armor : inventory.getArmorContents()) {
-                points += armor.getArmorPoints();
-                epf += calculateEnchantmentReduction(armor, source);
-                toughness += armor.getToughness();
+                for (Item armor : inventory.getArmorContents()) {
+                    points += armor.getArmorPoints();
+                    epf += calculateEnchantmentReduction(armor, source);
+                    toughness += armor.getToughness();
+                }
+
+                float originalDamage = source.getDamage();
+
+                float finalDamage = (float) (originalDamage * (1 - Math.max(points / 5, points - originalDamage / (2 + toughness / 4)) / 25) * (1 - /*0.75 */ epf * 0.04));
+
+                source.setDamage(finalDamage - originalDamage, DamageModifier.ARMOR);
+                //source.setDamage(source.getDamage(DamageModifier.ARMOR_ENCHANTMENTS) - (originalDamage - originalDamage * (1 - epf / 25)), DamageModifier.ARMOR_ENCHANTMENTS);
             }
 
-            float originalDamage = source.getDamage();
+            if (super.attack(source)) {
+                Entity damager = null;
 
-            float finalDamage = (float) (originalDamage * (1 - Math.max(points / 5, points - originalDamage / (2 + toughness / 4)) / 25) * (1 - /*0.75 */ epf * 0.04));
+                if (source instanceof EntityDamageByEntityEvent) {
+                    damager = ((EntityDamageByEntityEvent) source).getDamager();
+                }
 
-            source.setDamage(finalDamage - originalDamage, DamageModifier.ARMOR);
-            //source.setDamage(source.getDamage(DamageModifier.ARMOR_ENCHANTMENTS) - (originalDamage - originalDamage * (1 - epf / 25)), DamageModifier.ARMOR_ENCHANTMENTS);
-        }
+                for (int slot = 0; slot < 4; slot++) {
+                    Item armor = this.inventory.getArmorItem(slot);
 
-        if (super.attack(source)) {
-            Entity damager = null;
-
-            if (source instanceof EntityDamageByEntityEvent) {
-                damager = ((EntityDamageByEntityEvent) source).getDamager();
-            }
-
-            for (int slot = 0; slot < 4; slot++) {
-                Item armor = this.inventory.getArmorItem(slot);
-
-                if (armor.hasEnchantments()) {
-                    if (damager != null) {
-                        for (Enchantment enchantment : armor.getEnchantments()) {
-                            enchantment.doPostAttack(damager, this);
+                    if (armor.hasEnchantments()) {
+                        if (damager != null) {
+                            for (Enchantment enchantment : armor.getEnchantments()) {
+                                enchantment.doPostAttack(damager, this);
+                            }
                         }
+
+                        Enchantment durability = armor.getEnchantment(Enchantment.ID_DURABILITY);
+                        if (durability != null && durability.getLevel() > 0 && (100 / (durability.getLevel() + 1)) <= new Random().nextInt(100))
+                            continue;
                     }
+                    armor.setDamage(armor.getDamage() + 1);
 
-                    Enchantment durability = armor.getEnchantment(Enchantment.ID_DURABILITY);
-                    if (durability != null && durability.getLevel() > 0 && (100 / (durability.getLevel() + 1)) <= new Random().nextInt(100))
-                        continue;
+                    if (armor.getDamage() >= armor.getMaxDurability()) {
+                        inventory.setArmorItem(slot, new ItemBlock(new BlockAir()));
+                    } else {
+                        inventory.setArmorItem(slot, armor, true);
+                    }
                 }
-                armor.setDamage(armor.getDamage() + 1);
 
-                if (armor.getDamage() >= armor.getMaxDurability()) {
-                    inventory.setArmorItem(slot, new ItemBlock(new BlockAir()));
-                } else {
-                    inventory.setArmorItem(slot, armor, true);
-                }
+                return true;
+            } else {
+                return false;
             }
-
-            return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     protected double calculateEnchantmentReduction(Item item, EntityDamageEvent source) {
