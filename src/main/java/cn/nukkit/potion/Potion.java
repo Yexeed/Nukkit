@@ -7,7 +7,11 @@ import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.entity.EntityDamageEvent.DamageCause;
 import cn.nukkit.event.entity.EntityRegainHealthEvent;
 import cn.nukkit.event.potion.PotionApplyEvent;
+import cn.nukkit.item.Item;
 import cn.nukkit.utils.ServerException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * author: MagicDroidX
@@ -94,6 +98,115 @@ public class Potion implements Cloneable {
         potions[Potion.STRENGTH_II] = new Potion(Potion.STRENGTH_II, 2);
         potions[Potion.WEAKNESS] = new Potion(Potion.WEAKNESS);
         potions[Potion.WEAKNESS_LONG] = new Potion(Potion.WEAKNESS_LONG);
+
+        Map<Item, Potion> map = potions[WATER].ingredients;
+
+        map.put(Item.get(Item.NETHER_WART), potions[AWKWARD]);
+        map.put(Item.get(Item.SPIDER_EYE), potions[MUNDANE]);
+        map.put(Item.get(Item.BLAZE_POWDER), potions[MUNDANE]);
+        map.put(Item.get(Item.GHAST_TEAR), potions[MUNDANE]);
+        map.put(Item.get(Item.REDSTONE_DUST), potions[MUNDANE]);
+        map.put(Item.get(Item.GLISTERING_MELON), potions[MUNDANE]);
+        map.put(Item.get(Item.RABBIT_FOOT), potions[MUNDANE]);
+        map.put(Item.get(Item.SUGAR), potions[MUNDANE]);
+        map.put(Item.get(Item.MAGMA_CREAM), potions[MUNDANE]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[THICK]);
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[WEAKNESS]);
+        map.put(Item.get(Item.NETHER_WART), potions[AWKWARD]);
+
+        map = potions[AWKWARD].ingredients;
+
+        map.put(Item.get(Item.GOLDEN_CARROT), potions[NIGHT_VISION]);
+        map.put(Item.get(Item.MAGMA_CREAM), potions[FIRE_RESISTANCE]);
+        map.put(Item.get(Item.RABBIT_FOOT), potions[LEAPING]);
+        map.put(Item.get(Item.SUGAR), potions[SPEED]);
+        map.put(Item.get(Item.PUFFERFISH), potions[WATER_BREATHING]);
+        map.put(Item.get(Item.GLISTERING_MELON), potions[INSTANT_HEALTH]);
+        map.put(Item.get(Item.SPIDER_EYE), potions[POISON]);
+        map.put(Item.get(Item.GHAST_TEAR), potions[REGENERATION]);
+        map.put(Item.get(Item.BLAZE_POWDER), potions[STRENGTH]);
+
+        map = potions[WEAKNESS].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[WEAKNESS_LONG]);
+
+        map = potions[NIGHT_VISION].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[INVISIBLE]);
+        map.put(Item.get(Item.REDSTONE_DUST), potions[NIGHT_VISION_LONG]);
+
+        map = potions[NIGHT_VISION_LONG].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[INVISIBLE_LONG]);
+
+        map = potions[INVISIBLE].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[INVISIBLE_LONG]);
+
+        map = potions[FIRE_RESISTANCE].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[FIRE_RESISTANCE_LONG]);
+
+        map = potions[LEAPING].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[SLOWNESS]);
+        map.put(Item.get(Item.REDSTONE_DUST), potions[LEAPING_LONG]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[LEAPING_II]);
+
+        map = potions[LEAPING_LONG].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[SLOWNESS_LONG]);
+
+        map = potions[SLOWNESS].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[SLOWNESS_LONG]);
+
+        map = potions[SPEED].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[SLOWNESS]);
+        map.put(Item.get(Item.REDSTONE_DUST), potions[SPEED_LONG]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[SPEED_II]);
+
+        map = potions[SPEED_LONG].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[SLOWNESS_LONG]);
+
+        map = potions[WATER_BREATHING].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[WATER_BREATHING_LONG]);
+
+        map = potions[INSTANT_HEALTH].ingredients;
+
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[INSTANT_HEALTH_II]);
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[HARMING]);
+
+        map = potions[INSTANT_HEALTH_II].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[HARMING_II]);
+
+        map = potions[HARMING].ingredients;
+
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[HARMING_II]);
+
+        map = potions[POISON].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[HARMING]);
+        map.put(Item.get(Item.REDSTONE_DUST), potions[POISON_LONG]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[POISON_II]);
+
+        map = potions[POISON_II].ingredients;
+
+        map.put(Item.get(Item.FERMENTED_SPIDER_EYE), potions[HARMING_II]);
+
+        map = potions[REGENERATION].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[REGENERATION_LONG]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[REGENERATION_II]);
+
+        map = potions[STRENGTH].ingredients;
+
+        map.put(Item.get(Item.REDSTONE_DUST), potions[STRENGTH_LONG]);
+        map.put(Item.get(Item.GLOWSTONE_DUST), potions[STRENGTH_II]);
     }
 
     public static Potion getPotion(int id) {
@@ -119,6 +232,8 @@ public class Potion implements Cloneable {
 
     protected boolean splash = false;
 
+    protected Map<Item, Potion> ingredients = new HashMap<>();
+
     public Potion(int id) {
         this(id, 1);
     }
@@ -126,6 +241,7 @@ public class Potion implements Cloneable {
     public Potion(int id, int level) {
         this(id, level, false);
     }
+
 
     public Potion(int id, int level, boolean splash) {
         this.id = id;
@@ -198,6 +314,16 @@ public class Potion implements Cloneable {
                 applyEffect.setDuration(duration);
                 entity.addEffect(applyEffect);
         }
+    }
+
+    public Potion getPotionFromIngredient(Item ingredient) {
+        for (Map.Entry<Item, Potion> entry : ingredients.entrySet()) {
+            if (entry.getKey().equals(ingredient)) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -472,5 +598,9 @@ public class Potion implements Cloneable {
                     return 0;
             }
         }
+    }
+
+    public static boolean isPotion(Item potion) {
+        return potion.getId() == Item.POTION || potion.getId() == Item.SPLASH_POTION || potion.getId() == Item.LINGERING_POTION;
     }
 }

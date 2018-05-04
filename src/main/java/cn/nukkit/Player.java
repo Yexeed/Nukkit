@@ -568,10 +568,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             pk.encode();
             pk.isEncoded = true;
 
-            DataPacket pk1 = new AvailableCommandsPacket();
-            pk1.setBuffer(pk.getBuffer(), 3);
-            pk1.decode();
-
             int identifier = this.dataPacket(pk, true); // We *need* ACK so we can be sure that the client received the packet or not
             Thread t = new Thread() {
                 public void run() {
@@ -2614,6 +2610,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             Server.broadcastPacket(this.getViewers().values(), packet);*/
                             break;
                         case EntityEventPacket.EXPERIENCE_CHANGE:
+                            getServer().getLogger().info("xp change: " + entityEventPacket.data);
                             this.cachedExperienceChange = entityEventPacket.data;
                             break;
                     }

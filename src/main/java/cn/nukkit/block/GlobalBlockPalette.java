@@ -46,7 +46,7 @@ public class GlobalBlockPalette {
         int runtimeId = legacyToRuntimeId.get(legacyId);
         if (runtimeId == -1) {
             runtimeId = registerMapping(runtimeIdAllocator.incrementAndGet(), legacyId);
-            MainLogger.getLogger().warning("Unmapped block registered. May not be recognised client-side");
+            MainLogger.getLogger().warning("Unmapped block registered (" + legacyId + "). May not be recognised client-side");
         }
         return runtimeId;
     }

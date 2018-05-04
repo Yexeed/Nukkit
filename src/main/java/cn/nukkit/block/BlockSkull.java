@@ -10,12 +10,19 @@ import cn.nukkit.blockentity.BlockEntitySkull;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemSkull;
 import cn.nukkit.item.ItemTool;
+import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.Tag;
 
 
 public class BlockSkull extends BlockTransparent {
+
+    protected static final AxisAlignedBB DEFAULT_AABB = new AxisAlignedBB(0.25D, 0.0D, 0.25D, 0.75D, 0.5D, 0.75D);
+    protected static final AxisAlignedBB NORTH_AABB = new AxisAlignedBB(0.25D, 0.25D, 0.5D, 0.75D, 0.75D, 1.0D);
+    protected static final AxisAlignedBB SOUTH_AABB = new AxisAlignedBB(0.25D, 0.25D, 0.0D, 0.75D, 0.75D, 0.5D);
+    protected static final AxisAlignedBB WEST_AABB = new AxisAlignedBB(0.5D, 0.25D, 0.25D, 1.0D, 0.75D, 0.75D);
+    protected static final AxisAlignedBB EAST_AABB = new AxisAlignedBB(0.0D, 0.25D, 0.25D, 0.5D, 0.75D, 0.75D);
 
     public BlockSkull() {
         this(0);
@@ -112,4 +119,29 @@ public class BlockSkull extends BlockTransparent {
         return ItemTool.TYPE_PICKAXE;
     }
 
+    @Override
+    protected AxisAlignedBB recalculateBoundingBox() {
+        AxisAlignedBB bb = null;
+
+        switch (BlockFace.fromIndex(this.meta)) {
+            case UP:
+            default:
+                bb = DEFAULT_AABB;
+                break;
+            case NORTH:
+                bb = NORTH_AABB;
+                break;
+            case SOUTH:
+                bb = SOUTH_AABB;
+                break;
+            case WEST:
+                bb = WEST_AABB;
+                break;
+            case EAST:
+                bb = EAST_AABB;
+                break;
+        }
+
+        return bb.clone().offset(this.x, this.y, this.z);
+    }
 }

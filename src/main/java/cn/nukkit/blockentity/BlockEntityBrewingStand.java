@@ -1,14 +1,12 @@
 package cn.nukkit.blockentity;
 
 import cn.nukkit.Player;
-import cn.nukkit.Server;
 import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockAir;
 import cn.nukkit.block.BlockBrewingStand;
 import cn.nukkit.event.inventory.BrewEvent;
 import cn.nukkit.event.inventory.StartBrewEvent;
 import cn.nukkit.inventory.BrewingInventory;
-import cn.nukkit.inventory.BrewingRecipe;
 import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBlock;
@@ -17,11 +15,9 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.ListTag;
 import cn.nukkit.network.protocol.ContainerSetDataPacket;
+import cn.nukkit.potion.Potion;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 
 public class BlockEntityBrewingStand extends BlockEntitySpawnable implements InventoryHolder, BlockEntityContainer, BlockEntityNameable {
 
@@ -32,12 +28,6 @@ public class BlockEntityBrewingStand extends BlockEntitySpawnable implements Inv
     public int brewTime = MAX_BREW_TIME;
     public int fuelTotal;
     public int fuelAmount;
-
-    public static final List<Integer> ingredients = new ArrayList<Integer>() {
-        {
-            addAll(Arrays.asList(Item.NETHER_WART, Item.GOLD_NUGGET, Item.GHAST_TEAR, Item.GLOWSTONE_DUST, Item.REDSTONE_DUST, Item.GUNPOWDER, Item.MAGMA_CREAM, Item.BLAZE_POWDER, Item.GOLDEN_CARROT, Item.SPIDER_EYE, Item.FERMENTED_SPIDER_EYE, Item.GLISTERING_MELON, Item.SUGAR, Item.RAW_FISH));
-        }
-    };
 
     public BlockEntityBrewingStand(FullChunk chunk, CompoundTag nbt) {
         super(chunk, nbt);
@@ -168,7 +158,21 @@ public class BlockEntityBrewingStand extends BlockEntitySpawnable implements Inv
     }
 
     protected boolean checkIngredient(Item ingredient) {
-        return ingredients.contains(ingredient.getId());
+        for (int i = 1; i < 4; i++) {
+            Item potion = getItem(i);
+
+            if (Potion.isPotion(potion)) {
+                if (ingredient.getId() == Item.GUNPOWDER && potion.getId() != Item.SPLASH_POTION)
+                    return true;
+
+                Potion pot = Potion.getPotion(potion.getDamage());
+                if (pot != null && pot.getPotionFromIngredient(ingredient) != null) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -228,10 +232,24 @@ public class BlockEntityBrewingStand extends BlockEntitySpawnable implements Inv
                 if (!e.isCancelled()) {
                     for (int i = 1; i <= 3; i++) {
                         Item potion = this.inventory.getItem(i);
-                        BrewingRecipe recipe = Server.getInstance().getCraftingManager().matchBrewingRecipe(ingredient, potion);
+                        if (Potion.isPotion(potion)) {
+                            if (ingredient.getId() == Item.GUNPOWDER) {
+                                if (potion.getId() != Item.SPLASH_POTION) {
+                                    potion = Item.get(Item.SPLASH_POTION, potion.getDamage());
+                                    this.inventory.setItem(i, potion);
+                                }
+                            } else {
+                                Potion pot = Potion.getPotion(potion.getDamage());
 
-                        if (recipe != null) {
-                            this.inventory.setItem(i, recipe.getResult());
+                                if (pot != null) {
+                                    Potion result = pot.getPotionFromIngredient(ingredient);
+
+                                    if (result != null) {
+                                        potion.setDamage(result.getId());
+                                        this.inventory.setItem(i, potion);
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -303,7 +321,7 @@ public class BlockEntityBrewingStand extends BlockEntitySpawnable implements Inv
             Item potion = this.inventory.getItem(i);
 
             if (potion.getId() == Item.POTION && potion.getCount() > 0) {
-                meta |= 1 << i;
+                meta |= 1 << (i - 1);
             }
         }
 
