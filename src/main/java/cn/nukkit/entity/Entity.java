@@ -180,6 +180,8 @@ public abstract class Entity extends Location implements Metadatable {
     public static final int DATA_FLAG_LINGER = 45;
     public static final int DATA_FLAG_GRAVITY = 46;
 
+    public static final int DATA_FLAG_SWIMMING = 55;
+
     public static long entityCount = 1;
 
     private static final Map<String, Class<? extends Entity>> knownEntities = new HashMap<>();
@@ -477,6 +479,14 @@ public abstract class Entity extends Location implements Metadatable {
 
     public void setSneaking(boolean value) {
         this.setDataFlag(DATA_FLAGS, DATA_FLAG_SNEAKING, value);
+    }
+
+    public void setSwimming(boolean value) {
+        setDataFlag(DATA_FLAGS, DATA_FLAG_SWIMMING, value);
+    }
+
+    public boolean isSwimming() {
+        return getDataFlag(DATA_FLAGS, DATA_FLAG_SWIMMING);
     }
 
     public boolean isSprinting() {

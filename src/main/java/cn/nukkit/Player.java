@@ -550,6 +550,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     }
 
     public void sendCommandData() {
+        if (!spawned)
+            return;
+
         AvailableCommandsPacket pk = new AvailableCommandsPacket();
         Map<String, CommandDataVersions> data = new HashMap<>();
         int count = 0;
@@ -847,6 +850,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     protected void doFirstSpawn() {
         this.spawned = true;
+        this.setEnableClientCommand(true);
 
         this.getAdventureSettings().update();
 
@@ -1993,8 +1997,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             this.setRemoveFormat(false);
         }
 
-        this.setEnableClientCommand(true);
-
         this.server.addOnlinePlayer(this);
         this.server.onPlayerCompleteLoginSequence(this);
     }
@@ -2464,6 +2466,12 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                 this.level.addParticle(new PunchBlockParticle(pos, block, face));
                             }
                             break;
+                        case PlayerActionPacket.ACTION_START_SWIMMING:
+                            setSwimming(true);
+                            break;
+                        case PlayerActionPacket.ACTION_STOP_SWIMMING:
+                            setSwimming(false);
+                            break;
                         default:
                             //System.out.println("UNKNOWN ACTION: "+playerActionPacket.action);
                             break;
@@ -2610,8 +2618,12 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             Server.broadcastPacket(this.getViewers().values(), packet);*/
                             break;
                         case EntityEventPacket.EXPERIENCE_CHANGE:
-                            getServer().getLogger().info("xp change: " + entityEventPacket.data);
+                            //getServer().getLogger().info("xp change: " + entityEventPacket.data);
                             this.cachedExperienceChange = entityEventPacket.data;
+
+                            /*if(this.cachedExperienceChange > 0) {
+
+                            }*/
                             break;
                     }
                     break;
@@ -4597,19 +4609,21 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         return false;
     }
 
-    public void changeExperience() {
+    public boolean changeExperience() {
         if (this.cachedExperienceChange < 0) {
             int level = getExperienceLevel() + this.cachedExperienceChange;
-
             if (level < 0) {
-                this.setExperience(0, 0);
-            } else {
-
-                this.setExperience(calculateRequireExperience(level), level);
+                sendExperience();
+                return false;
             }
 
+            this.setExperience(calculateRequireExperience(level), level);
+
             this.cachedExperienceChange = 0;
+            return true;
         }
+
+        return false;
     }
 
     @Override

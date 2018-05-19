@@ -2892,9 +2892,10 @@ public class Level implements ChunkManager, Metadatable {
                 continue;
             if (anBlockEntity.isBlockEntityValid())
                 continue;
+
             toClose.add(anBlockEntity);
         }
-        for (BlockEntity be : toClose.toArray(new BlockEntity[toClose.size()])) {
+        for (BlockEntity be : toClose.toArray(new BlockEntity[0])) {
             be.close();
         }
 

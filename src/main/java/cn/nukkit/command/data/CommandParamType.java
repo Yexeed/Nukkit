@@ -1,5 +1,8 @@
 package cn.nukkit.command.data;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+
 /**
  * @author CreeperFace
  */
@@ -20,6 +23,14 @@ public enum CommandParamType {
 
     COMMAND(0x1d);
 
+    private static Int2ObjectMap<CommandParamType> LOOKUP = new Int2ObjectOpenHashMap<>();
+
+    static {
+        for (CommandParamType type : values()) {
+            LOOKUP.put(type.getId(), type);
+        }
+    }
+
     private final int id;
 
     CommandParamType(int id) {
@@ -28,5 +39,9 @@ public enum CommandParamType {
 
     public int getId() {
         return id;
+    }
+
+    public static CommandParamType of(int index) {
+        return LOOKUP.getOrDefault(index, RAWTEXT);
     }
 }

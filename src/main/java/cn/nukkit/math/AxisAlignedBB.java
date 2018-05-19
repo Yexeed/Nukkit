@@ -321,6 +321,18 @@ public class AxisAlignedBB implements Cloneable {
         }
     }
 
+    public double distance(Vector3 p) {
+        return Math.sqrt(distanceSquared(p));
+    }
+
+    public double distanceSquared(Vector3 p) {
+        double dx = Math.max(0, Math.max(minX - p.x, p.x - maxX));
+        double dy = Math.max(0, Math.max(minY - p.y, p.y - maxY));
+        double dz = Math.max(0, Math.max(minZ - p.z, p.z - maxZ));
+
+        return dx * dx + dy * dy + dz * dz;
+    }
+
     @Override
     public String toString() {
         return "AxisAlignedBB(" + this.minX + ", " + this.minY + ", " + this.minZ + ", " + this.maxX + ", " + this.maxY + ", " + this.maxZ + ")";
