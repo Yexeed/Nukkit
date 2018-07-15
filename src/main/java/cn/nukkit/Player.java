@@ -235,6 +235,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     public int cachedExperienceChange = 0;
 
+    protected BlockVector3 lastTouchPosition; //TODO: hack client spam
+    protected long lastTouch;
+
     public int getStartActionTick() {
         return startAction;
     }
@@ -2852,6 +2855,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             switch (type) {
                                 case InventoryTransactionPacket.USE_ITEM_ACTION_CLICK_BLOCK:
                                     this.setDataFlag(DATA_FLAGS, DATA_FLAG_ACTION, false);
+
+                                    if (Objects.equals(blockVector, this.lastTouchPosition) && System.currentTimeMillis() - this.lastTouch < 20) {
+                                        break packetswitch;
+                                    }
+
+                                    this.lastTouchPosition = blockVector;
+                                    this.lastTouch = System.currentTimeMillis();
 
                                     if (this.canInteract(blockVector.add(0.5, 0.5, 0.5), this.isCreative() ? 13 : 7)) {
                                         if (this.isCreative()) {
