@@ -20,10 +20,7 @@ import cn.nukkit.event.weather.LightningStrikeEvent;
 import cn.nukkit.inventory.InventoryHolder;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBlock;
-import cn.nukkit.level.format.Chunk;
-import cn.nukkit.level.format.ChunkSection;
-import cn.nukkit.level.format.FullChunk;
-import cn.nukkit.level.format.LevelProvider;
+import cn.nukkit.level.format.*;
 import cn.nukkit.level.format.anvil.Anvil;
 import cn.nukkit.level.format.generic.BaseFullChunk;
 import cn.nukkit.level.format.generic.BaseLevelProvider;
@@ -45,23 +42,19 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.*;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.plugin.Plugin;
-import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.timings.LevelTimings;
 import cn.nukkit.utils.*;
 import co.aikar.timings.Timings;
 import co.aikar.timings.TimingsHistory;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * author: MagicDroidX Nukkit Project
@@ -71,6 +64,8 @@ public class Level implements ChunkManager, Metadatable {
     private static int levelIdCounter = 1;
     private static int chunkLoaderCounter = 1;
     public static int COMPRESSION_LEVEL = 8;
+
+    private static Function<Level, ChunkRequestManager> chunkRequestManagerFactory = DefaultChunkRequestManager::new;
 
     public static final int BLOCK_UPDATE_NORMAL = 1;
     public static final int BLOCK_UPDATE_RANDOM = 2;
@@ -103,13 +98,7 @@ public class Level implements ChunkManager, Metadatable {
 
     public final Map<Long, BlockEntity> updateBlockEntities = new HashMap<>();
 
-    // Use a weak map to avoid OOM
-    private final ConcurrentMap<Object, Object> chunkCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(10, TimeUnit.MINUTES)
-            .build().asMap();
-
-    private boolean cacheChunks = false;
+    private boolean cacheChunks;
 
     private final Server server;
 
@@ -155,9 +144,6 @@ public class Level implements ChunkManager, Metadatable {
     private final TreeSet<BlockUpdateEntry> updateQueue = new TreeSet<>();
     private final List<BlockUpdateEntry> nextTickUpdates = Lists.newArrayList();
     //private final Map<BlockVector3, Integer> updateQueueIndex = new HashMap<>();
-
-    private final Map<Long, Map<Integer, Player>> chunkSendQueue = new HashMap<>();
-    private final Map<Long, Boolean> chunkSendTasks = new HashMap<>();
 
     private final Map<Long, Boolean> chunkPopulationQueue = new HashMap<>();
     private final Map<Long, Boolean> chunkPopulationLock = new HashMap<>();
@@ -238,6 +224,8 @@ public class Level implements ChunkManager, Metadatable {
     private int dimension;
 
     public GameRules gameRules;
+
+    public final ChunkRequestManager chunkRequestManager = chunkRequestManagerFactory.apply(this);
 
     public Level(Server server, String name, String path, Class<? extends LevelProvider> provider) {
         this.blockStates = Block.fullList;
@@ -822,7 +810,7 @@ public class Level implements ChunkManager, Metadatable {
                 for (Map.Entry<Long, SoftReference<Map<Short, Object>>> entry : changedBlocks.entrySet()) {
                     long index = entry.getKey();
                     Map<Short, Object> blocks = entry.getValue().get();
-                    this.chunkCache.remove(index);
+                    this.chunkRequestManager.onChunkChanged(index);
                     int chunkX = Level.getHashX(index);
                     int chunkZ = Level.getHashZ(index);
                     if (blocks == null || blocks.size() > MAX_BLOCK_CACHE) {
@@ -842,13 +830,13 @@ public class Level implements ChunkManager, Metadatable {
                     }
                 }
             } else {
-                this.chunkCache.clear();
+                this.chunkRequestManager.clearCache(true);
             }
 
             this.changedBlocks.clear();
         }
 
-        this.processChunkRequest();
+        this.chunkRequestManager.process();
 
         if (this.sleepTicks > 0 && --this.sleepTicks <= 0) {
             this.checkSleep();
@@ -1025,17 +1013,11 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public void clearCache(boolean full) {
-        if (full) {
-            this.chunkCache.clear();
-        } else {
-            if (this.chunkCache.size() > 2048) {
-                this.chunkCache.clear();
-            }
-        }
+        this.chunkRequestManager.clearCache(full);
     }
 
     public void clearChunkCache(int chunkX, int chunkZ) {
-        this.chunkCache.remove(Level.chunkHash(chunkX, chunkZ));
+        this.chunkRequestManager.onChunkChanged(chunkX, chunkZ);
     }
 
     private void tickChunks() {
@@ -1655,7 +1637,7 @@ public class Level implements ChunkManager, Metadatable {
             if (direct) {
                 this.sendBlocks(this.getChunkPlayers((int) position.x >> 4, (int) position.z >> 4).values().stream()
                         .toArray(Player[]::new), new Block[]{block}, UpdateBlockPacket.FLAG_ALL_PRIORITY);
-                this.chunkCache.remove(index);
+                this.chunkRequestManager.onChunkChanged(index);
             } else {
                 addBlockChange(index, (int) block.x, (int) block.y, (int) block.z);
             }
@@ -2375,7 +2357,7 @@ public class Level implements ChunkManager, Metadatable {
             this.chunks.put(index, chunk);
         }
 
-        this.chunkCache.remove(index);
+        this.chunkRequestManager.onChunkChanged(index);
         chunk.setChanged();
 
         if (!this.isChunkInUse(chunkX, chunkZ)) {
@@ -2441,78 +2423,7 @@ public class Level implements ChunkManager, Metadatable {
             return;
         }
 
-        if (!this.chunkSendQueue.containsKey(index)) {
-            this.chunkSendQueue.put(index, new HashMap<>());
-        }
-
-        this.chunkSendQueue.get(index).put(player.getLoaderId(), player);
-    }
-
-    private void sendChunkFromCache(int x, int z) {
-        Long index = Level.chunkHash(x, z);
-        if (this.chunkSendTasks.containsKey(index)) {
-            for (Player player : this.chunkSendQueue.get(index).values()) {
-                if (player.isConnected() && player.usedChunks.containsKey(index)) {
-                    ChunkCacheEntry entry = (ChunkCacheEntry) this.chunkCache.get(index);
-
-                    player.sendChunk(x, z, player.getProtocol() <= 113 ? entry.packet11 : entry.packet);
-                }
-            }
-
-            this.chunkSendQueue.remove(index);
-            this.chunkSendTasks.remove(index);
-        }
-    }
-
-    private void processChunkRequest() {
-        if (!this.chunkSendQueue.isEmpty()) {
-            this.timings.syncChunkSendTimer.startTiming();
-            for (Entry<Long, Map<Integer, Player>> entry : new ArrayList<>(this.chunkSendQueue.entrySet())) {
-                Long index = entry.getKey();
-
-                if (this.chunkSendTasks.containsKey(index)) {
-                    continue;
-                }
-                int x = getHashX(index);
-                int z = getHashZ(index);
-                this.chunkSendTasks.put(index, true);
-                if (this.chunkCache.containsKey(index)) {
-                    this.sendChunkFromCache(x, z);
-                    continue;
-                }
-                this.timings.syncChunkSendPrepareTimer.startTiming();
-                AsyncTask task = this.provider.requestChunkTask(x, z);
-                if (task != null) {
-                    this.server.getScheduler().scheduleAsyncTask(task);
-                }
-                this.timings.syncChunkSendPrepareTimer.stopTiming();
-            }
-            this.timings.syncChunkSendTimer.stopTiming();
-        }
-    }
-
-    public void chunkRequestCallback(int x, int z, BatchPacket payload, BatchPacket payload11) {
-        this.timings.syncChunkSendTimer.startTiming();
-        Long index = Level.chunkHash(x, z);
-
-        if (this.cacheChunks && !this.chunkCache.containsKey(index)) {
-            this.chunkCache.put(index, new ChunkCacheEntry(payload, payload11));
-            this.sendChunkFromCache(x, z);
-            this.timings.syncChunkSendTimer.stopTiming();
-            return;
-        }
-
-        if (this.chunkSendTasks.containsKey(index)) {
-            for (Player player : this.chunkSendQueue.get(index).values()) {
-                if (player.isConnected() && player.usedChunks.containsKey(index)) {
-                    player.sendChunk(x, z, player.getProtocol() <= 113 ? payload11 : payload);
-                }
-            }
-
-            this.chunkSendQueue.remove(index);
-            this.chunkSendTasks.remove(index);
-        }
-        this.timings.syncChunkSendTimer.stopTiming();
+        this.chunkRequestManager.requestChunk(index, player);
     }
 
     public void removeEntity(Entity entity) {
@@ -2699,7 +2610,7 @@ public class Level implements ChunkManager, Metadatable {
 
         this.chunks.remove(index);
         this.chunkTickList.remove(index);
-        this.chunkCache.remove(index);
+        this.chunkRequestManager.onChunkChanged(index);
 
         this.timings.doChunkUnload.stopTiming();
 
@@ -3213,17 +3124,26 @@ public class Level implements ChunkManager, Metadatable {
         return true;
     }
 
+    public boolean isCacheChunks() {
+        return cacheChunks;
+    }
+
+    public static void setChunkRequestManagerFactory(Function<Level, ChunkRequestManager> chunkRequestManagerFactory) {
+        Level.chunkRequestManagerFactory = chunkRequestManagerFactory;
+    }
+
     public int getSpawnRadius() {
         return getGameRules().getInt("spawnRadius");
     }
 
     private static ChunkCacher chunkCacher = new ChunkCacher() {
         @Override
-        public BatchPacket getData(int x, int z, byte[] payload, int protocol) {
+        public ChunkRequestTask.Result getData(int x, int z, byte[] payload, byte[] data11) {
             FullChunkDataPacket pk = new FullChunkDataPacket();
             pk.chunkX = x;
             pk.chunkZ = z;
             pk.data = payload;
+
             pk.encode();
             pk.isEncoded = true;
 
@@ -3238,7 +3158,8 @@ public class Level implements ChunkManager, Metadatable {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            return batch;
+
+            return new ChunkRequestTask.Result(batch, batch, x, z);
         }
     };
 
@@ -3246,23 +3167,12 @@ public class Level implements ChunkManager, Metadatable {
         chunkCacher = cacher;
     }
 
-    public static BatchPacket getChunkCacheFromData(int x, int z, byte[] data, int protocol) {
-        return chunkCacher.getData(x, z, data, protocol);
+    public static ChunkRequestTask.Result getChunkCacheFromData(int x, int z, byte[] data, byte[] data11) {
+        return chunkCacher.getData(x, z, data, data11);
     }
 
     public interface ChunkCacher {
 
-        BatchPacket getData(int x, int z, byte[] payload, int protocol);
-    }
-
-    private static class ChunkCacheEntry {
-
-        public BatchPacket packet;
-        public BatchPacket packet11;
-
-        public ChunkCacheEntry(BatchPacket pk, BatchPacket packet11) {
-            this.packet = pk;
-            this.packet11 = packet11;
-        }
+        ChunkRequestTask.Result getData(int x, int z, byte[] payload, byte[] data11);
     }
 }

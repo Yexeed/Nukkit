@@ -162,7 +162,7 @@ public class Anvil extends BaseLevelProvider {
 
         this.getLevel().chunkRequestCallback(x, z, stream.getBuffer());*/
 
-        return new ChunkRequestTask(this.level, chunk);
+        return new ChunkRequestTask(this.level, chunk, (task) -> this.level.chunkRequestManager.requestCallback(task));
     }
 
     @Override

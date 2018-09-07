@@ -7,8 +7,7 @@ import cn.nukkit.level.Level;
 import cn.nukkit.level.format.generic.BaseChunk;
 import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
-import cn.nukkit.network.protocol.BatchPacket;
-import cn.nukkit.network.protocol.ProtocolInfo;
+import cn.nukkit.network.protocol.DataPacket;
 import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.utils.BinaryStream;
 
@@ -17,21 +16,24 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author CreeperFace
  */
 public class ChunkRequestTask extends AsyncTask {
 
-    private byte[] data;
-    private Level level;
-    private BaseChunk chunk;
-    private BatchPacket finalData;
-    private BatchPacket finalData11;
+    //    private byte[] data;
+    private final Level level;
+    public final BaseChunk chunk;
+    private Result result;
 
-    public ChunkRequestTask(Level level, BaseChunk chunk) {
+    private final Consumer<Result> callback;
+
+    public ChunkRequestTask(Level level, BaseChunk chunk, Consumer<Result> callback) {
         this.level = level;
         this.chunk = chunk.clone();
+        this.callback = callback;
     }
 
     @Override
@@ -116,18 +118,33 @@ public class ChunkRequestTask extends AsyncTask {
         int x = chunk.getX();
         int z = chunk.getZ();
 
-        this.finalData = Level.getChunkCacheFromData(x, z, stream.getBuffer(), ProtocolInfo.CURRENT_PROTOCOL);
-        this.finalData11 = Level.getChunkCacheFromData(x, z, stream11.getBuffer(), 113);
+        this.result = Level.getChunkCacheFromData(x, z, stream.getBuffer(), stream11.getBuffer());
     }
 
     @Override
     public void onCompletion(Server server) {
         Level lvl = server.getLevelByName(this.level.getFolderName());
 
-        if (lvl == null || lvl.getId() != this.level.getId()) {
+        if (lvl == null || lvl.getId() != this.level.getId() || this.result == null) {
             return;
         }
 
-        this.level.chunkRequestCallback(chunk.getX(), chunk.getZ(), finalData, finalData11);
+        callback.accept(this.result);
+    }
+
+    public static class Result {
+
+        public final DataPacket payload;
+        public final DataPacket payload11;
+
+        public final int x;
+        public final int z;
+
+        public Result(DataPacket payload, DataPacket payload11, int x, int z) {
+            this.payload = payload;
+            this.payload11 = payload11;
+            this.x = x;
+            this.z = z;
+        }
     }
 }
