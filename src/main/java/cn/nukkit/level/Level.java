@@ -981,7 +981,7 @@ public class Level implements ChunkManager, Metadatable {
                 if (b == null) {
                     continue;
                 }
-                UpdateBlockPacket packet = new UpdateBlockPacket();
+
                 if (b instanceof Block) {
                     UpdateBlockPacket updateBlockPacket = new UpdateBlockPacket();
                     updateBlockPacket.x = (int) ((Block) b).x;
@@ -1002,10 +1002,10 @@ public class Level implements ChunkManager, Metadatable {
                     updateBlockPacket.flags = flags;
                     packets.add(updateBlockPacket);
                 }
-                packets.add(packet);
             }
         }
-        this.server.batchPackets(target, packets.toArray(new DataPacket[packets.size()]));
+
+        this.server.batchPackets(target, packets.toArray(new DataPacket[0]));
     }
 
     public void clearCache() {
