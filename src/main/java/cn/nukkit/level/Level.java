@@ -42,11 +42,11 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.*;
 import cn.nukkit.network.protocol.*;
 import cn.nukkit.plugin.Plugin;
+import cn.nukkit.scheduler.BlockUpdateScheduler;
 import cn.nukkit.timings.LevelTimings;
 import cn.nukkit.utils.*;
 import co.aikar.timings.Timings;
 import co.aikar.timings.TimingsHistory;
-import com.google.common.collect.Lists;
 
 import java.io.File;
 import java.io.IOException;
@@ -141,8 +141,9 @@ public class Level implements ChunkManager, Metadatable {
         }
     };
 
-    private final TreeSet<BlockUpdateEntry> updateQueue = new TreeSet<>();
-    private final List<BlockUpdateEntry> nextTickUpdates = Lists.newArrayList();
+    private final BlockUpdateScheduler updateQueue;
+
+//    private final List<BlockUpdateEntry> nextTickUpdates = Lists.newArrayList();
     //private final Map<BlockVector3, Integer> updateQueueIndex = new HashMap<>();
 
     private final Map<Long, Boolean> chunkPopulationQueue = new HashMap<>();
@@ -293,6 +294,7 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         this.levelCurrentTick = this.provider.getCurrentTick();
+        this.updateQueue = new BlockUpdateScheduler(this, levelCurrentTick);
 
         this.chunkTickRadius = Math.min(this.server.getViewDistance(),
                 Math.max(1, (Integer) this.server.getConfig("chunk-ticking.tick-radius", 4)));
@@ -751,30 +753,32 @@ public class Level implements ChunkManager, Metadatable {
         this.unloadChunks();
         this.timings.doTickPending.startTiming();
 
-        for (int i = 0; i < this.updateQueue.size(); i++) {
-            BlockUpdateEntry entry = this.updateQueue.first();
+//        for (int i = 0; i < this.updateQueue.size(); i++) {
+//            BlockUpdateEntry entry = this.updateQueue.first();
+//
+//            if (entry.delay > this.getCurrentTick()) {
+//                break;
+//            }
+//
+//            this.updateQueue.remove(entry);
+//            this.nextTickUpdates.add(entry);
+//        }
+//
+//        for (BlockUpdateEntry entry : this.nextTickUpdates) {
+//            if (isAreaLoaded(new AxisAlignedBB(entry.pos, entry.pos))) {
+//                Block block = this.getBlock(entry.pos);
+//
+//                if (Block.equals(block, entry.block, false)) {
+//                    block.onUpdate(BLOCK_UPDATE_SCHEDULED);
+//                }
+//            } else {
+//                this.scheduleUpdate(entry.block, entry.pos, 0);
+//            }
+//        }
+//
+//        this.nextTickUpdates.clear();
 
-            if (entry.delay > this.getCurrentTick()) {
-                break;
-            }
-
-            this.updateQueue.remove(entry);
-            this.nextTickUpdates.add(entry);
-        }
-
-        for (BlockUpdateEntry entry : this.nextTickUpdates) {
-            if (isAreaLoaded(new AxisAlignedBB(entry.pos, entry.pos))) {
-                Block block = this.getBlock(entry.pos);
-
-                if (Block.equals(block, entry.block, false)) {
-                    block.onUpdate(BLOCK_UPDATE_SCHEDULED);
-                }
-            } else {
-                this.scheduleUpdate(entry.block, entry.pos, 0);
-            }
-        }
-
-        this.nextTickUpdates.clear();
+        this.updateQueue.tick(this.getCurrentTick());
         this.timings.doTickPending.stopTiming();
 
         TimingsHistory.entityTicks += this.updateEntities.size();
@@ -1177,9 +1181,9 @@ public class Level implements ChunkManager, Metadatable {
 
     public void updateAroundRedstone(Vector3 pos, BlockFace face) {
         for (BlockFace side : BlockFace.values()) {
-            /*if(face != null && side == face) {
+            if (face != null && side == face) {
                 continue;
-            }*/
+            }
 
             this.getBlock(pos.getSide(side)).onUpdate(BLOCK_UPDATE_REDSTONE);
         }
@@ -1247,24 +1251,18 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public boolean cancelSheduledUpdate(Vector3 pos, Block block) {
-        BlockUpdateEntry entry = new BlockUpdateEntry(pos, block);
-
-        return this.updateQueue.remove(entry);
+        return this.updateQueue.remove(new BlockUpdateEntry(pos, block));
     }
 
     public boolean isUpdateScheduled(Vector3 pos, Block block) {
-        BlockUpdateEntry entry = new BlockUpdateEntry(pos, block);
-
-        return this.updateQueue.contains(entry);
+        return this.updateQueue.contains(new BlockUpdateEntry(pos, block));
     }
 
     public boolean isBlockTickPending(Vector3 pos, Block block) {
-        BlockUpdateEntry entry = new BlockUpdateEntry(pos, block);
-
-        return this.nextTickUpdates.contains(entry);
+        return this.updateQueue.isBlockTickPending(pos, block);
     }
 
-    public List<BlockUpdateEntry> getPendingBlockUpdates(FullChunk chunk) {
+    public Set<BlockUpdateEntry> getPendingBlockUpdates(FullChunk chunk) {
         int minX = (chunk.getX() << 4) - 2;
         int maxX = minX + 16 + 2;
         int minZ = (chunk.getZ() << 4) - 2;
@@ -1273,27 +1271,8 @@ public class Level implements ChunkManager, Metadatable {
         return this.getPendingBlockUpdates(new AxisAlignedBB(minX, 0, minZ, maxX, 256, maxZ));
     }
 
-    public List<BlockUpdateEntry> getPendingBlockUpdates(AxisAlignedBB boundingBox) {
-        List<BlockUpdateEntry> list = null;
-
-        Iterator<BlockUpdateEntry> iterator;
-
-        iterator = this.updateQueue.iterator();
-
-        while (iterator.hasNext()) {
-            BlockUpdateEntry entry = iterator.next();
-            Vector3 pos = entry.pos;
-
-            if (pos.getX() >= boundingBox.minX && pos.getX() < boundingBox.maxX && pos.getZ() >= boundingBox.minZ && pos.getZ() < boundingBox.maxZ) {
-                if (list == null) {
-                    list = new ArrayList<>();
-                }
-
-                list.add(entry);
-            }
-        }
-
-        return list;
+    public Set<BlockUpdateEntry> getPendingBlockUpdates(AxisAlignedBB boundingBox) {
+        return updateQueue.getPendingBlockUpdates(boundingBox);
     }
 
     public Block[] getCollisionBlocks(AxisAlignedBB bb) {
@@ -2893,6 +2872,10 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public void addEntityMovement(int chunkX, int chunkZ, long entityId, double x, double y, double z, double yaw, double pitch, double headYaw) {
+        addEntityMovement(chunkX, chunkZ, entityId, x, y, z, yaw, pitch, headYaw, true);
+    }
+
+    public void addEntityMovement(int chunkX, int chunkZ, long entityId, double x, double y, double z, double yaw, double pitch, double headYaw, boolean onGround) {
         MoveEntityPacket pk = new MoveEntityPacket();
         pk.eid = entityId;
         pk.x = (float) x;
@@ -2901,6 +2884,7 @@ public class Level implements ChunkManager, Metadatable {
         pk.yaw = (float) yaw;
         pk.headYaw = (float) yaw;
         pk.pitch = (float) pitch;
+        pk.onGround = onGround;
 
         this.addChunkPacket(chunkX, chunkZ, pk);
     }
@@ -3039,38 +3023,15 @@ public class Level implements ChunkManager, Metadatable {
 
     public int getStrongPower(Vector3 pos) {
         int i = 0;
-        i = Math.max(i, this.getStrongPower(pos.down(), BlockFace.DOWN));
 
-        if (i >= 15) {
-            return i;
-        } else {
-            i = Math.max(i, this.getStrongPower(pos.up(), BlockFace.UP));
-
+        for (BlockFace face : BlockFace.values()) {
+            i = Math.max(i, this.getStrongPower(pos.getSide(face), face));
             if (i >= 15) {
                 return i;
-            } else {
-                i = Math.max(i, this.getStrongPower(pos.north(), BlockFace.NORTH));
-
-                if (i >= 15) {
-                    return i;
-                } else {
-                    i = Math.max(i, this.getStrongPower(pos.south(), BlockFace.SOUTH));
-
-                    if (i >= 15) {
-                        return i;
-                    } else {
-                        i = Math.max(i, this.getStrongPower(pos.west(), BlockFace.WEST));
-
-                        if (i >= 15) {
-                            return i;
-                        } else {
-                            i = Math.max(i, this.getStrongPower(pos.east(), BlockFace.EAST));
-                            return i >= 15 ? i : i;
-                        }
-                    }
-                }
             }
         }
+
+        return i;
     }
 
     public boolean isSidePowered(Vector3 pos, BlockFace face) {
@@ -3083,7 +3044,12 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public boolean isBlockPowered(Vector3 pos) {
-        return this.getRedstonePower(pos.north(), BlockFace.NORTH) > 0 || this.getRedstonePower(pos.south(), BlockFace.SOUTH) > 0 || this.getRedstonePower(pos.west(), BlockFace.WEST) > 0 || this.getRedstonePower(pos.east(), BlockFace.EAST) > 0 || this.getRedstonePower(pos.down(), BlockFace.DOWN) > 0 || this.getRedstonePower(pos.up(), BlockFace.UP) > 0;
+        for (BlockFace face : BlockFace.values()) {
+            if (this.getRedstonePower(pos.getSide(face), face) > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public int isBlockIndirectlyGettingPowered(Vector3 pos) {

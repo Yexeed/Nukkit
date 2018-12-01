@@ -238,6 +238,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     protected BlockVector3 lastTouchPosition; //TODO: hack client spam
     protected long lastTouch;
 
+    protected Vector3 signPos = null;
+
     public int getStartActionTick() {
         return startAction;
     }

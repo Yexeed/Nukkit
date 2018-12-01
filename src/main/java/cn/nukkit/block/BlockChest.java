@@ -76,15 +76,15 @@ public class BlockChest extends BlockTransparent {
     public boolean place(Item item, Block block, Block target, BlockFace face, double fx, double fy, double fz, Player player) {
         BlockEntityChest chest = null;
         int[] faces = {2, 5, 3, 4};
-        this.meta = faces[player != null ? player.getDirection().getHorizontalIndex() : 0];
 
-        for (int side = 2; side <= 5; ++side) {
-            if ((this.meta == 4 || this.meta == 5) && (side == 4 || side == 5)) {
-                continue;
-            } else if ((this.meta == 3 || this.meta == 2) && (side == 2 || side == 3)) {
-                continue;
-            }
-            Block c = this.getSide(BlockFace.fromIndex(side));
+        BlockFace direction = player != null ? player.getDirection() : BlockFace.NORTH;
+        this.meta = faces[direction.getHorizontalIndex()];
+
+        BlockFace side = direction.rotateYCCW();
+
+        for (BlockFace f : new BlockFace[]{side, side.getOpposite()}) {
+            Block c = this.getSide(f);
+
             if (c instanceof BlockChest && c.getDamage() == this.meta) {
                 BlockEntity blockEntity = this.getLevel().getBlockEntity(c);
                 if (blockEntity instanceof BlockEntityChest && !((BlockEntityChest) blockEntity).isPaired()) {

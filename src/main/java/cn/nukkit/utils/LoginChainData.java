@@ -36,4 +36,8 @@ public interface LoginChainData {
     String getCapeData();
 
     int getUIProfile();
+
+    default boolean isXboxAuthed() {
+        return false;
+    }
 }
