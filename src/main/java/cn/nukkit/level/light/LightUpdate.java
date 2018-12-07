@@ -3,12 +3,11 @@ package cn.nukkit.level.light;
 import cn.nukkit.block.Block;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.Level;
+import cn.nukkit.level.SubChunkIteratorManager;
 import cn.nukkit.math.BlockVector3;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 /**
  * author: dktapps
@@ -19,7 +18,9 @@ public abstract class LightUpdate {
 
     protected ChunkManager level;
 
-    protected Queue<Entry> spreadQueue;
+    protected Object2IntOpenHashMap<BlockVector3> updateNodes = new Object2IntOpenHashMap<BlockVector3>();
+
+    protected Queue<BlockVector3> spreadQueue;
 
     protected Set<BlockVector3> spreadVisited = new HashSet<>();
 
@@ -27,18 +28,14 @@ public abstract class LightUpdate {
 
     protected Set<BlockVector3> removalVisited = new HashSet<>();
 
+    protected SubChunkIteratorManager subChunkHandler;
+
     public LightUpdate(ChunkManager level) {
         this.level = level;
         this.removalQueue = new ArrayDeque<>();
         this.spreadQueue = new ArrayDeque<>();
-    }
 
-    public void addSpreadNode(int x, int y, int z) {
-        this.spreadQueue.add(new Entry(new BlockVector3(x, y, z)));
-    }
-
-    public void addRemoveNode(int x, int y, int z, int oldLight) {
-        this.spreadQueue.add(new Entry(new BlockVector3(x, y, z), oldLight));
+        this.subChunkHandler = new SubChunkIteratorManager(this.level);
     }
 
     abstract protected int getLight(int x, int y, int z);
@@ -46,30 +43,56 @@ public abstract class LightUpdate {
     abstract protected void setLight(int x, int y, int z, int level);
 
     public void setAndUpdateLight(int x, int y, int z, int newLevel) {
+        this.updateNodes.put(Level.blockHash(x, y, z), newLevel);
+//        BlockVector3 index;
+//
+//        if (spreadVisited.contains(index = Level.blockHash(x, y, z)) || removalVisited.contains(index)) {
+//            return;
+//        }
+//
+//        int oldLevel = this.getLight(x, y, z);
+//
+//        if (oldLevel != newLevel) {
+//            this.setLight(x, y, z, newLevel);
+//            if (oldLevel < newLevel) { //light increased
+//                this.spreadVisited.add(index);
+//                this.spreadQueue.add(new Entry(new BlockVector3(x, y, z)));
+//            } else { //light removed
+//                this.removalVisited.add(index);
+//                this.removalQueue.add(new Entry(new BlockVector3(x, y, z), oldLevel));
+//            }
+//        }
+    }
 
-        BlockVector3 index;
+    private void prepareNodes() {
+        for (Map.Entry<BlockVector3, Integer> entry : updateNodes.entrySet()) {
+            BlockVector3 pos = entry.getKey();
+            int newLevel = entry.getValue();
 
-        if (spreadVisited.contains(index = Level.blockHash(x, y, z)) || removalVisited.contains(index)) {
-            return;
-        }
+            if (this.subChunkHandler.moveTo(pos.x, pos.y, pos.z)) {
+                int oldLevel = this.getLight(pos.x, pos.y, pos.z);
 
-        int oldLevel = this.getLight(x, y, z);
+                if (oldLevel != newLevel) {
+                    this.setLight(pos.x, pos.y, pos.z, newLevel);
 
-        if (oldLevel != newLevel) {
-            this.setLight(x, y, z, newLevel);
-            if (oldLevel < newLevel) { //light increased
-                this.spreadVisited.add(index);
-                this.spreadQueue.add(new Entry(new BlockVector3(x, y, z)));
-            } else { //light removed
-                this.removalVisited.add(index);
-                this.removalQueue.add(new Entry(new BlockVector3(x, y, z), oldLevel));
+                    if (oldLevel < newLevel) {
+                        this.spreadVisited.add(pos);
+                        this.spreadQueue.add(pos);
+                    } else { //light removed
+                        this.removalVisited.add(pos);
+                        this.removalQueue.add(new Entry(pos, oldLevel));
+                    }
+                }
             }
         }
     }
 
     public void execute() {
+        prepareNodes();
+
         while (!this.removalQueue.isEmpty()) {
             Entry entry = this.removalQueue.poll();
+
             int x = entry.pos.x;
             int y = entry.pos.y;
             int z = entry.pos.z;
@@ -84,15 +107,21 @@ public abstract class LightUpdate {
             };
 
             for (int[] i : points) {
-                this.computeRemoveLight(i[0], i[1], i[2], entry.oldLight);
+                if (this.subChunkHandler.moveTo(i[0], i[1], i[2])) {
+                    this.computeRemoveLight(i[0], i[1], i[2], entry.oldLight);
+                }
             }
         }
 
         while (!spreadQueue.isEmpty()) {
-            Entry entry = this.spreadQueue.poll();
-            int x = entry.pos.x;
-            int y = entry.pos.y;
-            int z = entry.pos.z;
+            BlockVector3 pos = this.spreadQueue.poll();
+            int x = pos.x;
+            int y = pos.y;
+            int z = pos.z;
+
+            if (!this.subChunkHandler.moveTo(x, y, z)) {
+                continue;
+            }
 
             int newAdjacentLight = this.getLight(x, y, z);
             if (newAdjacentLight <= 0) {
@@ -109,7 +138,9 @@ public abstract class LightUpdate {
             };
 
             for (int[] i : points) {
-                this.computeSpreadLight(i[0], i[1], i[2], newAdjacentLight);
+                if (this.subChunkHandler.moveTo(i[0], i[1], i[2])) {
+                    this.computeSpreadLight(i[0], i[1], i[2], newAdjacentLight);
+                }
             }
         }
     }
@@ -130,14 +161,14 @@ public abstract class LightUpdate {
         } else if (current >= oldAdjacentLevel) {
             if (!spreadVisited.contains(index = Level.blockHash(x, y, z))) {
                 spreadVisited.add(index);
-                spreadQueue.add(new Entry(new BlockVector3(x, y, z)));
+                spreadQueue.add(new BlockVector3(x, y, z));
             }
         }
     }
 
     protected void computeSpreadLight(int x, int y, int z, int newAdjacentLevel) {
         int current = this.getLight(x, y, z);
-        int potentialLight = newAdjacentLevel - Block.lightFilter[this.level.getBlockIdAt(x, y, z)];
+        int potentialLight = newAdjacentLevel - Block.lightFilter[this.subChunkHandler.currentSection.getBlockId(x & 0x0f, y & 0x0f, z & 0x0f)];
 
         if (current < potentialLight) {
             this.setLight(x, y, z, potentialLight);
@@ -145,9 +176,7 @@ public abstract class LightUpdate {
             BlockVector3 index;
             if (!spreadVisited.contains(index = Level.blockHash(x, y, z))) {
                 spreadVisited.add(index);
-                if (potentialLight > 1) {
-                    spreadQueue.add(new Entry(new BlockVector3(x, y, z)));
-                }
+                spreadQueue.add(new BlockVector3(x, y, z));
             }
         }
     }

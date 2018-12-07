@@ -18,6 +18,9 @@ import java.util.Arrays;
 
 public abstract class BaseChunk extends BaseFullChunk implements Chunk {
 
+    private static final byte[] emptyIdArray = new byte[4096];
+    private static final byte[] emptyDataArray = new byte[2048];
+
     protected ChunkSection[] sections = new ChunkSection[SECTION_COUNT];
 
     @Override
@@ -199,8 +202,6 @@ public abstract class BaseChunk extends BaseFullChunk implements Chunk {
 
     @Override
     public boolean setSection(float fY, ChunkSection section) {
-        byte[] emptyIdArray = new byte[4096];
-        byte[] emptyDataArray = new byte[2048];
         if (Arrays.equals(emptyIdArray, section.getIdArray()) && Arrays.equals(emptyDataArray, section.getDataArray())) {
             this.sections[(int) fY] = new EmptyChunkSection((int) fY);
         } else {

@@ -13,11 +13,11 @@ public class BlockLightUpdate extends LightUpdate {
 
     @Override
     public int getLight(int x, int y, int z) {
-        return this.level.getBlockLightAt(x, y, z);
+        return this.subChunkHandler.currentSection.getBlockLight(x & 0x0f, y & 0x0f, z & 0x0f);
     }
 
     @Override
     public void setLight(int x, int y, int z, int level) {
-        this.level.setBlockLightAt(x, y, z, level);
+        this.subChunkHandler.currentSection.setBlockLight(x & 0x0f, y & 0x0f, z & 0x0f, level);
     }
 }

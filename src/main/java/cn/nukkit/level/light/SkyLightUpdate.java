@@ -12,10 +12,10 @@ public class SkyLightUpdate extends LightUpdate {
     }
 
     public int getLight(int x, int y, int z) {
-        return this.level.getBlockSkyLightAt(x, y, z);
+        return this.subChunkHandler.currentSection.getBlockSkyLight(x & 0x0f, y & 0x0f, z & 0x0f);
     }
 
     public void setLight(int x, int y, int z, int level) {
-        this.level.setBlockSkyLightAt(x, y, z, level);
+        this.subChunkHandler.currentSection.setBlockSkyLight(x & 0x0f, y & 0x0f, z & 0x0f, level);
     }
 }
