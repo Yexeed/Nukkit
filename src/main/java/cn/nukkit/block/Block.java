@@ -339,6 +339,8 @@ public abstract class Block extends Position implements Metadatable, Cloneable {
     public static boolean[] solid = null;
     public static double[] hardness = null;
     public static boolean[] transparent = null;
+    public static boolean[] diffusesSkyLight = null;
+
     public AxisAlignedBB boundingBox = null;
     public AxisAlignedBB collisionBoundingBox = null;
     protected int meta = 0;
@@ -357,6 +359,7 @@ public abstract class Block extends Position implements Metadatable, Cloneable {
             solid = new boolean[256];
             hardness = new double[256];
             transparent = new boolean[256];
+            diffusesSkyLight = new boolean[256];
 
             list[AIR] = BlockAir.class; //0
             list[STONE] = BlockStone.class; //1
@@ -620,22 +623,9 @@ public abstract class Block extends Position implements Metadatable, Cloneable {
                     transparent[id] = block.isTransparent();
                     hardness[id] = block.getHardness();
                     light[id] = block.getLightLevel();
-
-                    if (block.isSolid()) {
-                        if (block.isTransparent()) {
-                            if (block instanceof BlockLiquid || block instanceof BlockIce) {
-                                lightFilter[id] = 2;
-                            } else {
-                                lightFilter[id] = 1;
-                            }
-                        } else {
-                            lightFilter[id] = 15;
-                        }
-                    } else {
-                        lightFilter[id] = 1;
-                    }
+                    diffusesSkyLight[id] = block.diffusesSkyLight();
+                    lightFilter[id] = block.getLightFilter() + 1;
                 } else {
-                    lightFilter[id] = 1;
                     for (int data = 0; data < 16; ++data) {
                         fullList[(id << 4) | data] = new BlockUnknown(id, data);
                     }
@@ -740,6 +730,14 @@ public abstract class Block extends Position implements Metadatable, Cloneable {
 
     public int getLightLevel() {
         return 0;
+    }
+
+    public int getLightFilter() {
+        return 15;
+    }
+
+    public boolean diffusesSkyLight() {
+        return false;
     }
 
     public boolean canBePlaced() {
