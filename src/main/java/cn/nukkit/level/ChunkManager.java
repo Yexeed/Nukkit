@@ -35,4 +35,6 @@ public interface ChunkManager {
     void setHeightMap(int x, int z, int value);
 
     long getSeed();
+
+    boolean isClosed();
 }

@@ -56,6 +56,7 @@ public class GenerationTask extends AsyncTask {
             manager.setChunk(chunk.getX(), chunk.getZ(), null);
         }
 
+        manager.close();
     }
 
     @Override

@@ -39,6 +39,10 @@ public class GeneratorRegisterTask extends AsyncTask {
             GeneratorPool.put(this.levelId, generator);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        } finally {
+            if (manager != null) {
+                manager.close();
+            }
         }
     }
 }

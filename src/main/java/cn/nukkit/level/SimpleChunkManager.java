@@ -12,9 +12,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * Nukkit Project
  */
 public class SimpleChunkManager implements ChunkManager {
+
     protected Map<Long, FullChunk> chunks = new ConcurrentHashMap<>();
 
     protected final long seed;
+
+    private boolean closed = false;
 
     public SimpleChunkManager(long seed) {
         this.seed = seed;
@@ -134,5 +137,14 @@ public class SimpleChunkManager implements ChunkManager {
     @Override
     public long getSeed() {
         return seed;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public void close() {
+        this.closed = true;
     }
 }

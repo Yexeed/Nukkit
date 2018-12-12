@@ -22,6 +22,7 @@ import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemBlock;
 import cn.nukkit.level.format.*;
 import cn.nukkit.level.format.anvil.Anvil;
+import cn.nukkit.level.format.generic.BaseChunk;
 import cn.nukkit.level.format.generic.BaseFullChunk;
 import cn.nukkit.level.format.generic.BaseLevelProvider;
 import cn.nukkit.level.format.generic.EmptyChunkSection;
@@ -231,6 +232,8 @@ public class Level implements ChunkManager, Metadatable {
 
     private BlockLightUpdate blockLightUpdate = null;
     private SkyLightUpdate skyLightUpdate = null;
+
+    private boolean closed = false;
 
     public Level(Server server, String name, String path, Class<? extends LevelProvider> provider) {
         this.blockStates = Block.fullList;
@@ -443,6 +446,11 @@ public class Level implements ChunkManager, Metadatable {
         this.blockMetadata = null;
         this.temporalPosition = null;
         this.server.getLevels().remove(this.levelId);
+        this.closed = true;
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     public void addSound(Sound sound) {
@@ -1496,6 +1504,23 @@ public class Level implements ChunkManager, Metadatable {
         return block;
     }
 
+    public BaseFullChunk[] getAdjacentChunks(int x, int z) {
+        BaseFullChunk[] chunks = new BaseFullChunk[9];
+
+        for (int xx = 0; xx <= 2; ++xx) {
+            for (int zz = 0; zz <= 2; ++zz) {
+                int i = zz * 3 + xx;
+                if (i == 4) {
+                    continue; //center chunk
+                }
+
+                chunks[i] = this.getChunk(x + xx - 1, z + zz - 1, false);
+            }
+        }
+
+        return chunks;
+    }
+
     public int getHighestAdjacentBlockLight(Vector3 pos) {
         int maxValue = 0;
 
@@ -1706,7 +1731,7 @@ public class Level implements ChunkManager, Metadatable {
                 position = (Position) pos;
             }
 
-            if(position.level == null) {
+            if (position.level == null) {
                 position.level = this;
             }
 
@@ -2589,9 +2614,8 @@ public class Level implements ChunkManager, Metadatable {
             return false;
         }
 
-        if (!chunk.isLightPopulated() && chunk.isPopulated()
-                && (boolean) this.getServer().getConfig("chunk-ticking.light-updates", false)) {
-            this.getServer().getScheduler().scheduleAsyncTask(new LightPopulationTask(this, chunk));
+        if (chunk instanceof BaseChunk && !chunk.isLightPopulated() && chunk.isPopulated() && (boolean) this.getServer().getConfig("chunk-ticking.light-updates", false)) {
+            this.getServer().getScheduler().scheduleAsyncTask(new LightPopulationTask(this, (BaseChunk) chunk));
         }
 
         if (this.isChunkInUse(x, z)) {

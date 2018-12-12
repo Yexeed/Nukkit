@@ -1,33 +1,38 @@
 package cn.nukkit.level.light;
 
-import cn.nukkit.level.ChunkManager;
-import cn.nukkit.level.format.generic.BaseFullChunk;
+import cn.nukkit.Server;
+import cn.nukkit.level.Level;
+import cn.nukkit.level.format.anvil.Chunk;
+import cn.nukkit.scheduler.AsyncTask;
 
 /**
  * Created by CreeperFace on 22.7.2017.
  */
-public class ChunkLightPopulator {
+public class ChunkLightPopulator extends AsyncTask {
 
-    protected ChunkManager level;
+    protected Level level;
 
-    protected int chunkX;
-    protected int chunkZ;
+    protected Chunk chunk;
 
     protected LightUpdate blockLightUpdates = null;
     protected LightUpdate skyLightUpdates = null;
 
-    public ChunkLightPopulator(ChunkManager level, int chunkX, int chunkZ) {
+    public ChunkLightPopulator(Level level, Chunk chunk) {
         this.level = level;
-        this.chunkX = chunkX;
-        this.chunkZ = chunkZ;
-
-        this.blockLightUpdates = new BlockLightUpdate(level);
-        this.skyLightUpdates = new SkyLightUpdate(level);
+        this.chunk = (Chunk) chunk.clone();
     }
 
-    public void populate() {
-        BaseFullChunk chunk = this.level.getChunk(this.chunkX, this.chunkZ);
+    @Override
+    public void onRun() {
+        chunk.recalculateHeightMap();
+        chunk.populateSkyLight();
+        chunk.setLightPopulated();
+    }
 
-
+    @Override
+    public void onCompletion(Server server) {
+        if (!level.isClosed()) {
+            level.generateChunkCallback(chunk.getX(), chunk.getZ(), chunk);
+        }
     }
 }

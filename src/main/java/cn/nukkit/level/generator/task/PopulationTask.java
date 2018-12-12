@@ -12,6 +12,7 @@ import cn.nukkit.scheduler.AsyncTask;
  * Nukkit Project
  */
 public class PopulationTask extends AsyncTask {
+
     public boolean state;
     public final int levelId;
     public BaseFullChunk chunk;
@@ -93,7 +94,7 @@ public class PopulationTask extends AsyncTask {
 
             chunk = manager.getChunk(chunk.getX(), chunk.getZ());
             chunk.recalculateHeightMap();
-            chunk.populateSkyLight(manager);
+            chunk.populateSkyLight();
             chunk.setLightPopulated();
             chunk.setPopulated();
             this.chunk = chunk.clone();
@@ -123,6 +124,8 @@ public class PopulationTask extends AsyncTask {
 
                 this.chunks[i] = chunks[i] != null ? chunks[i].clone() : null;
             }
+
+            manager.close();
         }
     }
 
