@@ -87,18 +87,19 @@ public class BlockGrass extends BlockDirt {
                     getLevel().setBlock(this, ev.getNewState(), false, false);
                 }
             } else if (light >= 9) {
-                for (int l = 0; l < 4; ++l) {
+                for (int i = 0; i < 4; ++i) {
                     NukkitRandom random = new NukkitRandom();
                     int x = random.nextRange((int) this.x - 1, (int) this.x + 1);
-                    int y = random.nextRange((int) this.y - 2, (int) this.y + 2);
+                    int y = random.nextRange((int) this.y - 3, (int) this.y + 1);
                     int z = random.nextRange((int) this.z - 1, (int) this.z + 1);
-                    Block blocks = this.getLevel().getBlock(new Vector3(x, y, z));
 
-                    if (blocks.getId() == Block.DIRT && blocks.getDamage() == 0x0F && blocks.up().getLightLevel() >= 4 && blocks.z <= 2) {
-                        BlockSpreadEvent ev = new BlockSpreadEvent(blocks, this, new BlockGrass());
+                    Block block = this.getLevel().getBlock(new Vector3(x, y, z));
+
+                    if (block.getId() == Block.DIRT && block.getDamage() == 0 && this.level.getFullLight(above) >= 4 && Block.lightFilter[above.getId()] < 3) {
+                        BlockSpreadEvent ev = new BlockSpreadEvent(block, this, new BlockGrass());
                         Server.getInstance().getPluginManager().callEvent(ev);
                         if (!ev.isCancelled()) {
-                            this.getLevel().setBlock(blocks, ev.getNewState());
+                            this.getLevel().setBlock(block, ev.getNewState());
                         }
                     }
                 }

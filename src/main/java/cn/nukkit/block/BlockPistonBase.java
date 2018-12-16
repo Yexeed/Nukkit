@@ -11,6 +11,7 @@ import cn.nukkit.level.sound.PistonOutSound;
 import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.utils.MainLogger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +56,7 @@ public abstract class BlockPistonBase extends BlockSolid {
         } else {
             this.meta = player.getHorizontalFacing().getIndex();
         }
+
         this.level.setBlock(block, this, true, false);
 
         CompoundTag nbt = new CompoundTag("")
@@ -64,6 +66,7 @@ public abstract class BlockPistonBase extends BlockSolid {
                 .putInt("z", (int) this.z)
                 .putBoolean("Sticky", this.sticky);
 
+        MainLogger.getLogger().info("placed");
         BlockEntityPistonArm be = new BlockEntityPistonArm(this.level.getChunk((int) this.x >> 4, (int) this.z >> 4), nbt);
 
         //this.checkState();

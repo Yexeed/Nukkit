@@ -124,6 +124,7 @@ public class Level implements ChunkManager, Metadatable {
     public boolean stopTime;
 
     public float skyLightSubtracted;
+    public float sunAnglePercentage;
 
     private String folderName;
 
@@ -315,7 +316,7 @@ public class Level implements ChunkManager, Metadatable {
         this.temporalVector = new Vector3(0, 0, 0);
         this.tickRate = 1;
 
-        this.skyLightSubtracted = this.calculateSkylightSubtracted(1);
+        this.skyLightSubtracted = this.calculateSkylightSubtracted();
     }
 
     public static long chunkHash(int x, int z) {
@@ -681,7 +682,7 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public void sendTime() {
-        sendTime(this.players.values().stream().toArray(Player[]::new));
+        sendTime(this.players.values().toArray(new Player[0]));
     }
 
     public GameRules getGameRules() {
@@ -758,7 +759,8 @@ public class Level implements ChunkManager, Metadatable {
 
         }
 
-        this.skyLightSubtracted = this.calculateSkylightSubtracted(1);
+        this.skyLightSubtracted = this.calculateSkylightSubtracted();
+        this.sunAnglePercentage = this.calculateSunAnglePercentage();
 
         this.levelCurrentTick++;
 
@@ -1023,7 +1025,7 @@ public class Level implements ChunkManager, Metadatable {
             }
         }
 
-        this.server.batchPackets(target, packets.toArray(new DataPacket[0]));
+        this.server.batchPackets(target, packets.toArray(new DataPacket[0]), true);
     }
 
     public void clearCache() {
@@ -1053,7 +1055,7 @@ public class Level implements ChunkManager, Metadatable {
             int chunkZ = (int) loader.getZ() >> 4;
 
             Long index = Level.chunkHash(chunkX, chunkZ);
-            int existingLoaders = Math.max(0, this.chunkTickList.containsKey(index) ? this.chunkTickList.get(index) : 0);
+            int existingLoaders = Math.max(0, this.chunkTickList.getOrDefault(index, 0));
             this.chunkTickList.put(index, existingLoaders + 1);
             for (int chunk = 0; chunk < chunksPerLoader; ++chunk) {
                 int dx = new java.util.Random().nextInt(2 * randRange) - randRange;
@@ -1404,46 +1406,72 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public int getFullLight(Vector3 pos) {
-        FullChunk chunk = this.getChunk((int) pos.x >> 4, (int) pos.z >> 4, false);
-        int level = 0;
-        if (chunk != null) {
-            level = chunk.getBlockSkyLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f);
-            level -= this.skyLightSubtracted;
+        int light = Math.round(getBlockSkyLightAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ()) - this.skyLightSubtracted);
 
-            if (level < 15) {
-                level = Math.max(chunk.getBlockLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f),
-                        level);
-            }
-        }
-
-        return level;
+        return light < 15 ? Math.max(light, getBlockLightAt(pos.getFloorX(), pos.getFloorY(), pos.getFloorZ())) : light;
+//        FullChunk chunk = this.getChunk((int) pos.x >> 4, (int) pos.z >> 4, false);
+//        int level = 0;
+//        if (chunk != null) {
+//            level = chunk.getBlockSkyLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f);
+//            level -= this.skyLightSubtracted;
+//
+//            if (level < 15) {
+//                level = Math.max(chunk.getBlockLight((int) pos.x & 0x0f, (int) pos.y & 0xff, (int) pos.z & 0x0f),
+//                        level);
+//            }
+//        }
+//
+//        return level;
     }
 
-    public int calculateSkylightSubtracted(float tickDiff) {
-        float angle = this.calculateCelestialAngle(getTime(), tickDiff);
-        float light = 1 - (MathHelper.cos(angle * ((float) Math.PI * 2F)) * 2 + 0.5f);
-        light = light < 0 ? 0 : light > 1 ? 1 : light;
-        light = 1 - light;
-        light = (float) ((double) light * ((isRaining() ? 1 : 0) - (double) 5f / 16d));
-        light = (float) ((double) light * ((isThundering() ? 1 : 0) - (double) 5f / 16d));
-        light = 1 - light;
-        return (int) (light * 11f);
+    public int calculateSkylightSubtracted() {
+//        float angle = this.calculateCelestialAngle(getTime(), tickDiff);
+//        float light = 1 - (MathHelper.cos(angle * ((float) Math.PI * 2F)) * 2 + 0.5f);
+//        light = light < 0 ? 0 : light > 1 ? 1 : light;
+//        light = 1 - light;
+//        light = (float) ((double) light * ((isRaining() ? 1 : 0) - (double) 5f / 16d));
+//        light = (float) ((double) light * ((isThundering() ? 1 : 0) - (double) 5f / 16d));
+//        light = 1 - light;
+//        return (int) (light * 11f);
+
+        float percentage = Math.max(0, Math.min(1, (float) -(Math.cos(getSunAngleRadians()) * 2 - 0.5f)));
+        percentage = 1 - percentage;
+
+        percentage = (percentage * ((isRaining() ? 1 : 0) - 5f / 16));
+        percentage = (percentage * ((isThundering() ? 1 : 0) - 5f / 16));
+
+        return (int) percentage * 11;
     }
 
-    public float calculateCelestialAngle(int time, float tickDiff) {
-        float angle = ((float) time + tickDiff) / 24000f - 0.25f;
+    public float calculateSunAnglePercentage() {
+        float timeProgress = (this.time % 24000) / 24000;
 
-        if (angle < 0) {
-            ++angle;
-        }
+        float sunProgress = timeProgress + (timeProgress < 0.25 ? 0.75f : -0.25f);
 
-        if (angle > 1) {
-            --angle;
-        }
+        float diff = (((1 - ((float) (Math.cos(sunProgress * Math.PI) + 1) / 2)) - sunProgress) / 3);
 
-        float i = 1 - (float) ((Math.cos((double) angle * Math.PI) + 1) / 2d);
-        angle = angle + (i - angle) / 3;
-        return angle;
+        return sunProgress + diff;
+//        float angle = ((float) time + tickDiff) / 24000f - 0.25f;
+//
+//        if (angle < 0) {
+//            ++angle;
+//        }
+//
+//        if (angle > 1) {
+//            --angle;
+//        }
+//
+//        float i = 1 - (float) ((Math.cos((double) angle * Math.PI) + 1) / 2d);
+//        angle = angle + (i - angle) / 3;
+//        return angle;
+    }
+
+    public float getSunAngleRadians() {
+        return this.sunAnglePercentage * 360;
+    }
+
+    public float getSunAngleDegrees() {
+        return (float) (this.sunAnglePercentage * 2 * Math.PI);
     }
 
     public int getMoonPhase(long worldTime) {
