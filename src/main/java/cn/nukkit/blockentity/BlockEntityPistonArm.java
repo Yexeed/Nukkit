@@ -8,7 +8,6 @@ import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.IntTag;
 import cn.nukkit.nbt.tag.ListTag;
-import cn.nukkit.utils.MainLogger;
 
 /**
  * @author CreeperFace
@@ -96,7 +95,6 @@ public class BlockEntityPistonArm extends BlockEntitySpawnable {
     }
 
     public CompoundTag getSpawnCompound() {
-        MainLogger.getLogger().info("send piston");
         return new CompoundTag()
                 .putString("id", "PistonArm")
                 .putInt("x", (int) this.x)

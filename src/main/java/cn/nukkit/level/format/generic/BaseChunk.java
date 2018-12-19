@@ -197,6 +197,10 @@ public abstract class BaseChunk extends BaseFullChunk implements Chunk {
 
     @Override
     public ChunkSection getSection(float fY) {
+        if (fY < 0 || fY >= SECTION_COUNT) {
+            return new EmptyChunkSection((int) fY);
+        }
+
         return this.sections[(int) fY];
     }
 

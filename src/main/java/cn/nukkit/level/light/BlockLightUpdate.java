@@ -18,6 +18,10 @@ public class BlockLightUpdate extends LightUpdate {
 
     @Override
     public void setLight(int x, int y, int z, int level) {
-        this.subChunkHandler.currentSection.setBlockLight(x & 0x0f, y & 0x0f, z & 0x0f, level);
+        try {
+            this.subChunkHandler.currentSection.setBlockLight(x & 0x0f, y & 0x0f, z & 0x0f, level);
+        } catch (Exception e) {
+
+        }
     }
 }
