@@ -9,6 +9,8 @@ import cn.nukkit.nbt.NBTIO;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.scheduler.AsyncTask;
 import cn.nukkit.utils.ChunkException;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,7 +28,7 @@ import java.util.regex.Pattern;
  */
 public class Anvil extends BaseLevelProvider {
 
-    protected final Map<Long, RegionLoader> regions = new HashMap<>();
+    protected final Long2ObjectMap<RegionLoader> regions = new Long2ObjectOpenHashMap<>();
 
     protected Map<Long, Chunk> chunks = new HashMap<>();
 

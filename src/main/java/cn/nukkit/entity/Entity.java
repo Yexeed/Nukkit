@@ -1275,6 +1275,7 @@ public abstract class Entity extends Location implements Metadatable {
 
     public final void scheduleUpdate() {
         this.level.updateEntities.put(this.id, this);
+//        this.chunk.updateEntity(this);
     }
 
     public boolean isOnFire() {

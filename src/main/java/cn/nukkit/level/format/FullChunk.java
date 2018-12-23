@@ -102,6 +102,10 @@ public interface FullChunk extends Cloneable {
 
     void removeEntity(Entity entity);
 
+//    void updateEntity(Entity entity);
+//
+//    Long2ObjectMap<Entity> getUpdateEntities();
+
     void addBlockEntity(BlockEntity blockEntity);
 
     void removeBlockEntity(BlockEntity blockEntity);
