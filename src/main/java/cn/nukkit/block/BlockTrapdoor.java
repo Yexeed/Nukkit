@@ -207,8 +207,17 @@ public class BlockTrapdoor extends BlockTransparent {
     }
 
     public BlockFace getFacing() {
-        int[] faces = {3, 1, 0, 2};
-        return BlockFace.fromHorizontalIndex(faces[this.meta & 0x03]);
+        switch (meta & 0x03) {
+            case 0:
+                return BlockFace.NORTH;
+            case 1:
+                return BlockFace.SOUTH;
+            case 2:
+                return BlockFace.WEST;
+            case 3:
+            default:
+                return BlockFace.EAST;
+        }
     }
 
     public boolean isOpen() {

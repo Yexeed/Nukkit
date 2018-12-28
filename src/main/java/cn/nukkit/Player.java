@@ -2472,10 +2472,24 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             }
                             break;
                         case PlayerActionPacket.ACTION_START_SWIMMING:
-                            setSwimming(true);
+                            PlayerToggleSwimEvent ptse = new PlayerToggleSwimEvent(this, true);
+                            this.server.getPluginManager().callEvent(ptse);
+
+                            if (ptse.isCancelled()) {
+                                this.sendData(this);
+                            } else {
+                                this.setSwimming(true);
+                            }
                             break;
                         case PlayerActionPacket.ACTION_STOP_SWIMMING:
-                            setSwimming(false);
+                            ptse = new PlayerToggleSwimEvent(this, false);
+                            this.server.getPluginManager().callEvent(ptse);
+
+                            if (ptse.isCancelled()) {
+                                this.sendData(this);
+                            } else {
+                                this.setSwimming(false);
+                            }
                             break;
                         default:
                             //System.out.println("UNKNOWN ACTION: "+playerActionPacket.action);
