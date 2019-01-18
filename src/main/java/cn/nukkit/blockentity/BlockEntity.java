@@ -87,6 +87,10 @@ public abstract class BlockEntity extends Position {
 
     }
 
+    public void onBreak() {
+
+    }
+
     public static BlockEntity createBlockEntity(String type, FullChunk chunk, CompoundTag nbt, Object... args) {
         type = type.replaceFirst("BlockEntity", ""); //TODO: Remove this after the first release
         BlockEntity blockEntity = null;

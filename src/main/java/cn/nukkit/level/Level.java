@@ -2034,6 +2034,7 @@ public class Level implements ChunkManager, Metadatable {
                 }
             }
 
+            blockEntity.onBreak();
             blockEntity.close();
 
             this.updateComparatorOutputLevel(target);

@@ -4,12 +4,12 @@ import cn.nukkit.Player;
 import cn.nukkit.event.inventory.CraftItemEvent;
 import cn.nukkit.inventory.BigCraftingGrid;
 import cn.nukkit.inventory.CraftingRecipe;
-import cn.nukkit.inventory.transaction.action.CraftingTakeResultAction;
 import cn.nukkit.inventory.transaction.action.InventoryAction;
 import cn.nukkit.item.Item;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.network.protocol.ContainerClosePacket;
 import cn.nukkit.network.protocol.types.ContainerIds;
+import cn.nukkit.scheduler.Task;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,13 +29,10 @@ public class CraftingTransaction extends InventoryTransaction {
 
     protected CraftingRecipe recipe;
 
-    public CraftingTakeResultAction craftAction;
-
     public CraftingTransaction(Player source, List<InventoryAction> actions) {
         super(source, actions, false);
 
         this.gridSize = (source.getCraftingGrid() instanceof BigCraftingGrid) ? 3 : 2;
-
         Item air = Item.get(Item.AIR, 0, 1);
         this.inputs = new Item[gridSize][gridSize];
         for (Item[] a : this.inputs) {
@@ -54,16 +51,11 @@ public class CraftingTransaction extends InventoryTransaction {
         int y = NukkitMath.floorDouble((double) index / this.gridSize);
         int x = index % this.gridSize;
 
-        //try {
         if (this.inputs[y][x].isNull()) {
             inputs[y][x] = item.clone();
         } else if (!inputs[y][x].equals(item)) {
             throw new RuntimeException("Input " + index + " has already been set and does not match the current item (expected " + inputs[y][x] + ", got " + item + ")");
         }
-        /*} catch (Exception e) {
-            MainLogger.getLogger().logException(e);
-            MainLogger.getLogger().error("index: "+index+"  y: "+y+"  x: "+x+"   grid: "+this.gridSize);
-        }*/
     }
 
     public Item[][] getInputMap() {
@@ -98,11 +90,11 @@ public class CraftingTransaction extends InventoryTransaction {
     }
 
     private Item[][] reindexInputs() {
-        int xOffset = gridSize;
-        int yOffset = gridSize;
+        int xMin = gridSize - 1;
+        int yMin = gridSize - 1;
 
-        int height = 0;
-        int width = 0;
+        int xMax = 0;
+        int yMax = 0;
 
         for (int y = 0; y < this.inputs.length; y++) {
             Item[] row = this.inputs[y];
@@ -111,31 +103,26 @@ public class CraftingTransaction extends InventoryTransaction {
                 Item item = row[x];
 
                 if (!item.isNull()) {
-                    xOffset = Math.min(x, xOffset);
-                    yOffset = Math.min(y, yOffset);
+                    xMin = Math.min(x, xMin);
+                    yMin = Math.min(y, yMin);
 
-                    height = Math.max(y + 1 - yOffset, height);
-                    width = Math.max(x + 1 - xOffset, width);
+                    xMax = Math.max(x, xMax);
+                    yMax = Math.max(y, yMax);
                 }
             }
         }
 
-        if (height == 0 || width == 0) {
+        final int height = yMax - yMin + 1;
+        final int width = xMax - xMin + 1;
+
+        if (height < 1 || width < 1) {
             return new Item[0][];
         }
 
-        Item air = Item.get(Item.AIR, 0, 0);
         Item[][] reindexed = new Item[height][width];
-        for (Item[] i : reindexed) {
-            Arrays.fill(i, air);
-        }
 
-        for (int y = 0; y < reindexed.length; y++) {
-            Item[] row = reindexed[y];
-
-            for (int x = 0; x < row.length; x++) {
-                reindexed[y][x] = this.inputs[y + yOffset][x + xOffset];
-            }
+        for (int y = yMin, i = 0; y <= yMax; y++, i++) {
+            System.arraycopy(inputs[y], xMin, reindexed[i], 0, width);
         }
 
         return reindexed;
@@ -153,16 +140,7 @@ public class CraftingTransaction extends InventoryTransaction {
         CraftItemEvent ev;
 
         this.source.getServer().getPluginManager().callEvent(ev = new CraftItemEvent(this));
-
-        if (!ev.isCancelled()) {
-            if (this.craftAction != null && ev.getOutput() != null) {
-                this.craftAction.onResultChange(ev.getOutput());
-            }
-
-            return true;
-        }
-
-        return false;
+        return !ev.isCancelled();
     }
 
     protected void sendInventories() {
@@ -176,7 +154,14 @@ public class CraftingTransaction extends InventoryTransaction {
 		 */
         ContainerClosePacket pk = new ContainerClosePacket();
         pk.windowId = ContainerIds.NONE;
-        this.source.dataPacket(pk);
+        source.getServer().getScheduler().scheduleDelayedTask(new Task() {
+            @Override
+            public void onRun(int currentTick) {
+                source.dataPacket(pk);
+            }
+        }, 20);
+
+        this.source.resetCraftingGridType();
     }
 
     public boolean execute() {

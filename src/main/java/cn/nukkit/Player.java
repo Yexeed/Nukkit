@@ -2872,13 +2872,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                 case InventoryTransactionPacket.USE_ITEM_ACTION_CLICK_BLOCK:
                                     this.setDataFlag(DATA_FLAGS, DATA_FLAG_ACTION, false);
 
-                                    if (Objects.equals(blockVector, this.lastTouchPosition) && System.currentTimeMillis() - this.lastTouch < 20) {
-                                        break packetswitch;
-                                    }
-
-                                    this.lastTouchPosition = blockVector;
-                                    this.lastTouch = System.currentTimeMillis();
-
                                     if (this.canInteract(blockVector.add(0.5, 0.5, 0.5), this.isCreative() ? 13 : 7)) {
                                         if (this.isCreative()) {
                                             Item i = inventory.getItemInHand();
@@ -3059,6 +3052,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                                     EntityDamageByEntityEvent entityDamageByEntityEvent = new EntityDamageByEntityEvent(this, target, DamageCause.ENTITY_ATTACK, damage);
                                     if (this.isSpectator()) entityDamageByEntityEvent.setCancelled();
+                                    if ((target instanceof Player)) {
+                                        entityDamageByEntityEvent.setCancelled();
+                                    }
+
                                     if (!target.attack(entityDamageByEntityEvent)) {
                                         if (item.isTool() && this.isSurvival()) {
                                             this.inventory.sendContents(this);

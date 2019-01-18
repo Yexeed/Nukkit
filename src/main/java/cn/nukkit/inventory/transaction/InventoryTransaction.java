@@ -4,7 +4,6 @@ import cn.nukkit.Player;
 import cn.nukkit.event.inventory.InventoryClickEvent;
 import cn.nukkit.event.inventory.InventoryTransactionEvent;
 import cn.nukkit.inventory.Inventory;
-import cn.nukkit.inventory.PlayerCursorInventory;
 import cn.nukkit.inventory.PlayerInventory;
 import cn.nukkit.inventory.transaction.action.InventoryAction;
 import cn.nukkit.inventory.transaction.action.SlotChangeAction;
@@ -75,6 +74,8 @@ public class InventoryTransaction {
     /**
      * This method should not be used by plugins, it's used to add tracked inventories for InventoryActions
      * involving inventories.
+     *
+     * @param inventory to add
      */
     public void addInventory(Inventory inventory) {
         if (!this.inventories.contains(inventory)) {
@@ -135,8 +136,9 @@ public class InventoryTransaction {
      * multiple inventorySlot changes referring to the same inventorySlot in a single transaction. These multiples are not even guaranteed
      * to be in the correct order (inventorySlot splitting in the crafting grid for example, causes the actions to be sent in the
      * wrong order), so this method also tries to chain them into order.
+     * </p>
      *
-     * @return bool
+     * @return successful
      */
     protected boolean squashDuplicateSlotChanges() {
         Map<Integer, List<SlotChangeAction>> slotChanges = new HashMap<>();
@@ -237,7 +239,6 @@ public class InventoryTransaction {
 
         SlotChangeAction from = null;
         SlotChangeAction to = null;
-        boolean cursor = false;
         Player who = null;
 
         for (InventoryAction action : this.actions) {
@@ -245,12 +246,6 @@ public class InventoryTransaction {
                 continue;
             }
             SlotChangeAction slotChange = (SlotChangeAction) action;
-
-            if (slotChange.getInventory() instanceof PlayerCursorInventory) {
-                cursor = true;
-                who = ((PlayerCursorInventory) slotChange.getInventory()).getHolder();
-                continue;
-            }
 
             if (slotChange.getInventory() instanceof PlayerInventory) {
                 who = (Player) slotChange.getInventory().getHolder();
@@ -263,8 +258,8 @@ public class InventoryTransaction {
             }
         }
 
-        if (who != null && from != null && (cursor || to != null)) {
-            if (to != null && from.getTargetItem().getCount() > from.getSourceItem().getCount()) {
+        if (who != null && to != null) {
+            if (from.getTargetItem().getCount() > from.getSourceItem().getCount()) {
                 from = to;
             }
 
@@ -288,13 +283,13 @@ public class InventoryTransaction {
 
         if (!callExecuteEvent()) {
             this.sendInventories();
-            return false;
+            return true;
         }
 
         for (InventoryAction action : this.actions) {
             if (!action.onPreExecute(this.source)) {
                 this.sendInventories();
-                return false;
+                return true;
             }
         }
 
