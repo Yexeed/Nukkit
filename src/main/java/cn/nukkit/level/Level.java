@@ -497,6 +497,10 @@ public class Level implements ChunkManager, Metadatable {
         this.addLevelSoundEvent(type, pitch, data, pos, false);
     }
 
+    public void addLevelSoundEvent(Vector3 pos, int type) {
+        this.addLevelSoundEvent(type, 1, -1, pos, false);
+    }
+
     public void addLevelSoundEvent(int type, int pitch, int data, Vector3 pos, boolean isGlobal) {
         LevelSoundEventPacket pk = new LevelSoundEventPacket();
         pk.sound = type;
@@ -1052,17 +1056,18 @@ public class Level implements ChunkManager, Metadatable {
         this.timings.entityTick.startTiming();
 
         if (!this.updateEntities.isEmpty()) {
-            for (Entity entity : new ArrayList<>(this.updateEntities.values())) {
-                if (entity.closed || !entity.onUpdate(currentTick)) {
-                    this.updateEntities.remove(entity.getId());
-                }
-            }
+
+            this.updateEntities.values().removeIf(entity -> entity.closed || !entity.onUpdate(currentTick));
 
             //cleanup
             if (currentTick % 600 == 0) { //30 seconds
                 int tickRadius = this.chunkTickRadius * this.chunkTickRadius;
 
-                for (Entity entity : new ArrayList<>(this.updateEntities.values())) {
+                Iterator<Entity> entityIterator = this.updateEntities.values().iterator();
+
+                while (entityIterator.hasNext()) {
+                    Entity entity = entityIterator.next();
+
                     boolean close = false;
 
                     for (ChunkLoader loader : this.loaders.values()) {
@@ -1073,7 +1078,7 @@ public class Level implements ChunkManager, Metadatable {
                     }
 
                     if (!close) {
-                        this.updateEntities.remove(entity.getId());
+                        entityIterator.remove();
                     }
                 }
             }

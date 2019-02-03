@@ -4369,7 +4369,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     public void resetCraftingGridType() {
         if (this.craftingGrid != null) {
-            Item[] drops = this.inventory.addItem(this.craftingGrid.getContents().values().stream().toArray(Item[]::new));
+            Item[] drops = this.inventory.addItem(this.craftingGrid.getContents().values().toArray(new Item[0]));
+
 
             if (drops.length > 0) {
                 for (Item drop : drops) {
