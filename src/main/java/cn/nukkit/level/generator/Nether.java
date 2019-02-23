@@ -1,9 +1,6 @@
 package cn.nukkit.level.generator;
 
-import cn.nukkit.block.Block;
-import cn.nukkit.block.BlockLava;
-import cn.nukkit.block.BlockOreQuartz;
-import cn.nukkit.block.BlockSoulSand;
+import cn.nukkit.block.*;
 import cn.nukkit.level.ChunkManager;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.format.FullChunk;
@@ -88,9 +85,10 @@ public class Nether extends Generator {
         this.populators.add(new PopulatorGlowStone());
         PopulatorOre ore = new PopulatorOre(Block.NETHERRACK);
         ore.setOreTypes(new OreType[]{
-                new OreType(new BlockOreQuartz(), 40, 16, 0, 128),
-                new OreType(new BlockSoulSand(), 1, 64, 30, 35),
-                new OreType(new BlockLava(), 32, 1, 0, 32),
+                new OreType(new BlockOreQuartz(), 20, 16, 0, 128),
+                new OreType(new BlockSoulSand(), 5, 64, 0, 128),
+                new OreType(new BlockGravel(), 5, 64, 0, 128),
+                new OreType(new BlockLava(), 1, 16, 0, 32),
         });
         this.populators.add(ore);
     }

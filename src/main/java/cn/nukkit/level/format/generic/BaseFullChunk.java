@@ -118,6 +118,7 @@ public abstract class BaseFullChunk implements FullChunk {
             boolean changed = false;
             if (this.NBTentities != null) {
                 this.getProvider().getLevel().timings.syncChunkLoadEntitiesTimer.startTiming();
+
                 for (CompoundTag nbt : NBTentities) {
                     if (!nbt.contains("id")) {
                         this.setChanged();

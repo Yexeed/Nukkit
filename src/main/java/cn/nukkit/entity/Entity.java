@@ -429,8 +429,6 @@ public abstract class Entity extends Location implements Metadatable {
 
         this.lastUpdate = this.server.getTick();
         this.server.getPluginManager().callEvent(new EntitySpawnEvent(this));
-
-        this.scheduleUpdate();
     }
 
     public boolean hasCustomName() {
@@ -1122,27 +1120,30 @@ public abstract class Entity extends Location implements Metadatable {
             EntityPortalEnterEvent ev = new EntityPortalEnterEvent(this, PortalType.NETHER);
             getServer().getPluginManager().callEvent(ev);
 
-            Position newPos = EnumLevel.moveToNether(this);
-            if (newPos != null) {
-                for (int x = -1; x < 2; x++) {
-                    for (int z = -1; z < 2; z++) {
-                        int chunkX = (newPos.getFloorX() >> 4) + x,
-                                chunkZ = (newPos.getFloorZ() >> 4) + z;
-                        FullChunk chunk = newPos.level.getChunk(chunkX, chunkZ, false);
-                        if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
-                            newPos.level.generateChunk(chunkX, chunkZ, true);
+            if (!ev.isCancelled()) {
+                Position newPos = EnumLevel.moveToNether(this);
+                if (newPos != null) {
+                    for (int x = -1; x < 2; x++) {
+                        for (int z = -1; z < 2; z++) {
+                            int chunkX = (newPos.getFloorX() >> 4) + x, chunkZ = (newPos.getFloorZ() >> 4) + z;
+                            FullChunk chunk = newPos.level.getChunk(chunkX, chunkZ, false);
+                            if (chunk == null || !(chunk.isGenerated() || chunk.isPopulated())) {
+                                newPos.level.generateChunk(chunkX, chunkZ, true);
+                            }
                         }
                     }
+                    this.teleport(newPos.add(1.5, 1, 0.5));
+                    server.getScheduler().scheduleDelayedTask(new Task() {
+                        @Override
+                        public void onRun(int currentTick) {
+                            // dirty hack to make sure chunks are loaded and generated before spawning
+                            // player
+                            Position finalPos = BlockNetherPortal.spawnPortal(newPos);
+                            teleport(finalPos.add(1.5, 1, 0.5));
+
+                        }
+                    }, 20);
                 }
-                this.teleport(newPos.add(1.5, 1, 0.5));
-                server.getScheduler().scheduleDelayedTask(new Task() {
-                    @Override
-                    public void onRun(int currentTick) {
-                        //dirty hack to make sure chunks are loaded and generated before spawning player
-                        teleport(newPos.add(1.5, 1, 0.5));
-                        BlockNetherPortal.spawnPortal(newPos);
-                    }
-                }, 20);
             }
         }
 
@@ -1294,6 +1295,9 @@ public abstract class Entity extends Location implements Metadatable {
     }
 
     public final void scheduleUpdate() {
+        if (!this.server.isPrimaryThread()) {
+            MainLogger.getLogger().logException(new NullPointerException("another thread"));
+        }
         this.level.updateEntities.put(this.id, this);
 //        this.chunk.updateEntity(this);
     }

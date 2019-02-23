@@ -1,52 +1,36 @@
 package cn.nukkit.level;
 
-import cn.nukkit.Server;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public enum EnumLevel {
-    OVERWORLD,
-    NETHER,
-    //THE_END
-    ;
+    OVERWORLD(""),
+    NETHER("nether"),
+    END("end");
 
-    Level level;
+    @Getter
+    private final String suffix;
 
-    public Level getLevel() {
-        return level;
-    }
-
-    public static void initLevels() {
-        OVERWORLD.level = Server.getInstance().getDefaultLevel();
-        NETHER.level = Server.getInstance().getLevelByName("nether");
-        if (NETHER.level == null) {
-            Server.getInstance().getLogger().alert("No level called \"nether\" found! Nether functionality will be disabled.");
-        }
-    }
-
-    public static Level getOtherNetherPair(Level current) {
-        if (current == OVERWORLD.level) {
-            return NETHER.level;
-        } else if (current == NETHER.level) {
-            return OVERWORLD.level;
-        } else {
-            throw new IllegalArgumentException("Neither overworld nor nether given!");
-        }
-    }
+    @Getter
+    private final int id = ordinal();
 
     public static Position moveToNether(Position current) {
-        if (NETHER.level == null) {
-            return null;
-        } else {
-            if (current.level == OVERWORLD.level) {
-                return new Position(mRound(current.getFloorX() >> 3, 128), mRound(current.getFloorY(), 32), mRound(current.getFloorZ() >> 3, 128), NETHER.level);
-            } else if (current.level == NETHER.level) {
-                return new Position(mRound(current.getFloorX() << 3, 1024), mRound(current.getFloorY(), 32), mRound(current.getFloorZ() << 3, 1024), OVERWORLD.level);
-            } else {
-                throw new IllegalArgumentException("Neither overworld nor nether given!");
-            }
+        Level target;
+
+        switch (current.level.getDimension()) {
+            case OVERWORLD:
+                target = current.level.getNether();
+                return new Position(mRound(current.getFloorX() >> 3, 128), mRound(current.getFloorY(), 32), mRound(current.getFloorZ() >> 3, 128), target);
+            case NETHER:
+                target = current.level.getOverworld();
+                return new Position(mRound(current.getFloorX() << 3, 1024), mRound(current.getFloorY(), 32), mRound(current.getFloorZ() << 3, 1024), target);
+            default:
+                return null;
         }
     }
 
-    private static final int mRound(int value, int factor) {
+    private static int mRound(int value, int factor) {
         return Math.round(value / factor) * factor;
     }
 }

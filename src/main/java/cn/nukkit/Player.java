@@ -722,11 +722,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                 this.unloadChunk(chunkX, chunkZ, oldLevel);
             }
 
-            setDimension(targetLevel.getDimension());
-            PlayStatusPacket statusPacket0 = new PlayStatusPacket();
-            statusPacket0.status = PlayStatusPacket.PLAYER_SPAWN;
-            dataPacket(statusPacket0);
-
             this.usedChunks = new HashMap<>();
 
             this.level.sendTime(this);
@@ -1966,7 +1961,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         startGamePacket.yaw = (float) this.yaw;
         startGamePacket.pitch = (float) this.pitch;
         startGamePacket.seed = -1;
-        startGamePacket.dimension = (byte) (spawnPosition.level.getDimension() & 0xff);
+        startGamePacket.dimension = (byte) (spawnPosition.level.getDimension().getId() & 0xff);
         startGamePacket.worldGamemode = getClientFriendlyGamemode(this.gamemode);
         startGamePacket.difficulty = this.server.getDifficulty();
         startGamePacket.spawnX = (int) spawnPosition.x;
@@ -3057,9 +3052,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
                                     EntityDamageByEntityEvent entityDamageByEntityEvent = new EntityDamageByEntityEvent(this, target, DamageCause.ENTITY_ATTACK, damage);
                                     if (this.isSpectator()) entityDamageByEntityEvent.setCancelled();
-                                    if ((target instanceof Player)) {
-                                        entityDamageByEntityEvent.setCancelled();
-                                    }
+//                                    if ((target instanceof Player) && !gamerule-pvp) { //TODO: gamerules
+//                                        entityDamageByEntityEvent.setCancelled();
+//                                    }
 
                                     if (!target.attack(entityDamageByEntityEvent)) {
                                         if (item.isTool() && this.isSurvival()) {
@@ -4507,7 +4502,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     public void setDimension(int dimension) {
         ChangeDimensionPacket pk = new ChangeDimensionPacket();
-        pk.dimension = getLevel().getDimension();
+        pk.dimension = getLevel().getDimension().getId();
         this.dataPacket(pk);
     }
 

@@ -103,7 +103,8 @@ public class Level implements ChunkManager, Metadatable {
 
     private final Long2ObjectMap<Entity> entities = new Long2ObjectOpenHashMap<>();
 
-    public final Long2ObjectMap<Entity> updateEntities = new Long2ObjectOpenHashMap<>();
+    //    public final Long2ObjectMap<Entity> updateEntities = new Long2ObjectOpenHashMap<>();
+    public Map<Long, Entity> updateEntities = new HashMap<>();
 
     public final Long2ObjectMap<BlockEntity> updateBlockEntities = new Long2ObjectOpenHashMap<>();
 
@@ -232,7 +233,7 @@ public class Level implements ChunkManager, Metadatable {
 
     private long levelCurrentTick = 0;
 
-    private int dimension;
+    private EnumLevel dimension;
 
     public GameRules gameRules;
 
@@ -243,12 +244,18 @@ public class Level implements ChunkManager, Metadatable {
 
     private boolean closed = false;
 
+    private final String path;
+
+    private Level nether;
+    private Level overworld;
+
     public Level(Server server, String name, String path, Class<? extends LevelProvider> provider) {
         this.blockStates = Block.fullList;
         this.levelId = levelIdCounter++;
         this.blockMetadata = new BlockMetadataStore(this);
         this.server = server;
         this.autoSave = server.getAutoSave();
+        this.path = path;
 
         boolean convert = provider == McRegion.class || provider == LevelDB.class;
         try {
@@ -400,10 +407,19 @@ public class Level implements ChunkManager, Metadatable {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
         this.generatorInstance.init(this, new NukkitRandom(this.getSeed()));
-        this.dimension = this.generatorInstance.getDimension();
+        this.dimension = EnumLevel.values()[this.generatorInstance.getDimension()];
         this.gameRules = this.provider.getGamerules();
 
+        switch (this.dimension) {
+            case OVERWORLD:
+                this.overworld = this;
+                break;
+            case NETHER:
+                this.nether = this;
+                break;
+        }
 
         this.registerGenerator();
     }
@@ -1057,13 +1073,28 @@ public class Level implements ChunkManager, Metadatable {
 
         if (!this.updateEntities.isEmpty()) {
 
-            this.updateEntities.values().removeIf(entity -> entity.closed || !entity.onUpdate(currentTick));
+            if (!this.server.isPrimaryThread()) {
+                MainLogger.getLogger().logException(new NullPointerException("another thread"));
+            }
+
+            Map<Long, Entity> updateEntities = new HashMap<>(this.updateEntities);
+            Iterator<Entity> entityIterator = updateEntities.values().iterator();
+
+            while (entityIterator.hasNext()) {
+                Entity entity = entityIterator.next();
+
+                if (entity.closed || !entity.onUpdate(currentTick) || entity.closed) {
+                    entityIterator.remove();
+                }
+            }
+
+            this.updateEntities = updateEntities;
 
             //cleanup
             if (currentTick % 600 == 0) { //30 seconds
                 int tickRadius = this.chunkTickRadius * this.chunkTickRadius;
 
-                Iterator<Entity> entityIterator = this.updateEntities.values().iterator();
+                entityIterator = this.updateEntities.values().iterator();
 
                 while (entityIterator.hasNext()) {
                     Entity entity = entityIterator.next();
@@ -2619,6 +2650,10 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         this.entities.remove(entity.getId());
+        if (!this.server.isPrimaryThread()) {
+            MainLogger.getLogger().logException(new NullPointerException("another thread"));
+        }
+
         this.updateEntities.remove(entity.getId());
     }
 
@@ -3209,7 +3244,7 @@ public class Level implements ChunkManager, Metadatable {
         this.sendWeather(players.stream().toArray(Player[]::new));
     }
 
-    public int getDimension() {
+    public EnumLevel getDimension() {
         return dimension;
     }
 
@@ -3288,6 +3323,64 @@ public class Level implements ChunkManager, Metadatable {
         }
 
         return true;
+    }
+
+    public Level getOverworld() {
+        if (overworld == null) {
+            overworld = generateDimension(EnumLevel.OVERWORLD);
+        }
+
+        return overworld;
+    }
+
+    public boolean isOverworldLoaded() {
+        return overworld != null;
+    }
+
+    public Level getNether() {
+        if (nether == null) {
+            nether = generateDimension(EnumLevel.NETHER);
+        }
+
+        return nether;
+    }
+
+    public boolean isNetherLoaded() {
+        return nether != null;
+    }
+
+    public Level generateDimension(EnumLevel dimension) {
+        if (this.dimension == dimension) {
+            throw new UnsupportedOperationException("Cannot generate the same dimension (" + dimension + ")");
+        }
+
+        String name;
+
+        if (this.dimension == EnumLevel.OVERWORLD) {
+            name = this.folderName;
+        } else {
+            name = this.folderName.substring(0, this.folderName.length() - (this.dimension.getSuffix().length() + 1));
+        }
+
+        if (!dimension.getSuffix().isEmpty()) {
+            name += "_" + dimension.getSuffix();
+        }
+
+        Level level;
+
+        if (this.server.loadLevel(name)) {
+            level = this.server.getLevelByName(name);
+        } else {
+            this.server.generateLevel(name, System.currentTimeMillis(), Generator.getGenerator("nether"));
+
+            level = this.server.getLevelByName(name);
+        }
+
+        if (level == null) {
+            throw new RuntimeException("Could not generate nether for level " + this.folderName);
+        }
+
+        return level;
     }
 
     public boolean isCacheChunks() {

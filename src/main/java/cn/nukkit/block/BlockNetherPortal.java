@@ -1,6 +1,7 @@
 package cn.nukkit.block;
 
 import cn.nukkit.item.Item;
+import cn.nukkit.level.EnumLevel;
 import cn.nukkit.level.Level;
 import cn.nukkit.level.Position;
 import cn.nukkit.math.AxisAlignedBB;
@@ -98,9 +99,19 @@ public class BlockNetherPortal extends BlockFlowable {
         );
     }
 
-    public static void spawnPortal(Position pos) {
+    public static Position spawnPortal(Position pos) {
         Level lvl = pos.level;
         int x = pos.getFloorX(), y = pos.getFloorY(), z = pos.getFloorZ();
+
+        int maxY = lvl.getDimension() == EnumLevel.NETHER ? 110 : 240;
+
+        while (y < maxY) {
+            if (lvl.getBlockIdAt(x, y, z) == 0) {
+                break;
+            }
+
+            y++;
+        }
 
         for (int xx = -1; xx < 4; xx++) {
             for (int yy = 1; yy < 4; yy++) {
@@ -147,5 +158,7 @@ public class BlockNetherPortal extends BlockFlowable {
         lvl.setBlockIdAt(x + 1, y, z, OBSIDIAN);
         lvl.setBlockIdAt(x + 2, y, z, OBSIDIAN);
         lvl.setBlockIdAt(x + 3, y, z, OBSIDIAN);
+
+        return new Position(x, y, z, lvl);
     }
 }
